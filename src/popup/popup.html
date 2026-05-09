@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Image Blocker</title>
+    <link rel="stylesheet" href="./popup.css">
+</head>
+<body>
+
+<main class="popup-shell">
+    <header class="popup-header">
+        <h1>Site Blocker</h1>
+    </header>
+
+    <form class="rule-form" id="ruleForm">
+        <label class="input-label" for="siteInput">Site or URL rule</label>
+        <div class="input-row">
+            <input id="siteInput" placeholder="example.com/news" autocomplete="off">
+            <button class="add-button" id="addBtn" type="submit" aria-label="Add rule" title="Add rule">+</button>
+        </div>
+        <p class="hint" id="formHint">Use a domain, path prefix, or regex path.</p>
+    </form>
+
+    <section class="rules-section" aria-label="Blocked rules">
+        <div class="section-header">
+            <h2>Rules</h2>
+            <span class="counter" id="counter">0</span>
+        </div>
+
+        <p class="empty-state" id="emptyState">No blocked sites yet.</p>
+        <ul class="rules-list" id="list"></ul>
+    </section>
+</main>
+
+<script type="module" src="./popup.js"></script>
+
+</body>
+</html>
