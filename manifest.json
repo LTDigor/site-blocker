@@ -14,16 +14,21 @@
   ],
 
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/background/background.js",
+    "type": "module"
   },
 
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "src/popup/popup.html"
   },
 
   "web_accessible_resources": [
     {
-      "resources": ["block.html", "image.jpg"],
+      "resources": [
+        "src/blocked/block.html",
+        "src/blocked/blocked.js",
+        "assets/images/image.jpg"
+      ],
       "matches": ["<all_urls>"]
     }
   ]
