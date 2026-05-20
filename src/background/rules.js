@@ -20,14 +20,19 @@ export function parseRule(rule) {
     return {
         domain,
         type: "path",
-        path: pathPart
+        path: normalizePathPart(pathPart)
     };
 }
 
 function splitRule(rule) {
-    const normalizedRule = rule.trim().replace(/^https?:\/\//, "");
+    const normalizedRule = rule.trim().replace(/^https?:\/\//i, "");
     const domainEndIndex = findFirstIndex(normalizedRule, ["/", "?", "#"]);
     const domain = normalizedRule.slice(0, domainEndIndex);
+
+    if (!domain || domain.includes("@") || domain.includes(":")) {
+        throw new Error("Unsupported rule authority");
+    }
+
     const suffix = normalizedRule.slice(domainEndIndex);
     const pathEndIndex = findFirstIndex(suffix, ["?", "#"]);
     const pathPart = suffix.startsWith("/") ? suffix.slice(1, pathEndIndex) : "";
@@ -52,6 +57,14 @@ export function parseRules(rawRules) {
 
 function normalizeDomain(domain) {
     return new URL(`https://${domain}`).hostname.replace(/^www\./i, "");
+}
+
+function normalizePathPart(pathPart) {
+    if (pathPart.startsWith("^")) {
+        return pathPart;
+    }
+
+    return new URL(`/${pathPart}`, "https://example.test").pathname.replace(/^\//, "");
 }
 
 function findFirstIndex(value, needles) {
@@ -90,4 +103,53 @@ function matchesRule(url, rule) {
     }
 
     return false;
+}
+
+export function buildDeclarativeNetRequestRules(
+    rawRules,
+    redirectPath = "/src/blocked/block.html"
+) {
+    return parseRules(rawRules).map((rule, index) => ({
+        id: index + 1,
+        priority: 1,
+        action: {
+            type: "redirect",
+            redirect: {
+                extensionPath: redirectPath
+            }
+        },
+        condition: {
+            ...buildCondition(rule),
+            resourceTypes: ["main_frame"],
+            isUrlFilterCaseSensitive: true
+        }
+    }));
+}
+
+function buildCondition(rule) {
+    if (rule.type === "domain") {
+        return {
+            urlFilter: `||${rule.domain}^`
+        };
+    }
+
+    if (rule.type === "path") {
+        return {
+            regexFilter: buildUrlRegex(rule.domain, escapeRegExp(rule.path))
+        };
+    }
+
+    return {
+        regexFilter: buildUrlRegex(rule.domain, rule.regex.source.replace(/^\^/, ""))
+    };
+}
+
+function buildUrlRegex(domain, pathPattern) {
+    const domainPattern = escapeRegExp(domain);
+
+    return `^https?://([^/?#]+\\.)?${domainPattern}(?::[0-9]+)?/${pathPattern}`;
+}
+
+function escapeRegExp(value) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { matchesUrl, parseRule, parseRules } from "../../src/background/rules.js";
+import {
+    buildDeclarativeNetRequestRules,
+    matchesUrl,
+    parseRule,
+    parseRules
+} from "../../src/background/rules.js";
 
 test("parses domain rules", () => {
     assert.deepEqual(parseRule("example.com"), {
@@ -47,6 +52,17 @@ test("normalizes old persisted URL-shaped rules", () => {
     });
 });
 
+test("normalizes unicode path prefixes to match browser URL path encoding", () => {
+    const rules = [parseRule("example.com/café")];
+
+    assert.deepEqual(rules[0], {
+        domain: "example.com",
+        type: "path",
+        path: "caf%C3%A9"
+    });
+    assert.equal(matchesUrl("https://example.com/caf%C3%A9", rules), true);
+});
+
 test("matches whole domains and subdomains", () => {
     const rules = [parseRule("example.com")];
 
@@ -77,7 +93,13 @@ test("matches IDN domains", () => {
 });
 
 test("skips invalid persisted rules", () => {
-    assert.deepEqual(parseRules(["example.com", "example.com/^[", "openai.com"]), [
+    assert.deepEqual(parseRules([
+        "example.com",
+        "example.com/^[",
+        "https://user:pass@example.com/private",
+        "example.com:8443/admin",
+        "openai.com"
+    ]), [
         {
             domain: "example.com",
             type: "domain"
@@ -85,6 +107,60 @@ test("skips invalid persisted rules", () => {
         {
             domain: "openai.com",
             type: "domain"
+        }
+    ]);
+});
+
+test("builds declarativeNetRequest redirect rules", () => {
+    assert.deepEqual(buildDeclarativeNetRequestRules([
+        "example.com",
+        "example.com/news",
+        "example.com/^articles/[0-9]+"
+    ], "/blocked.html"), [
+        {
+            id: 1,
+            priority: 1,
+            action: {
+                type: "redirect",
+                redirect: {
+                    extensionPath: "/blocked.html"
+                }
+            },
+            condition: {
+                urlFilter: "||example.com^",
+                resourceTypes: ["main_frame"],
+                isUrlFilterCaseSensitive: true
+            }
+        },
+        {
+            id: 2,
+            priority: 1,
+            action: {
+                type: "redirect",
+                redirect: {
+                    extensionPath: "/blocked.html"
+                }
+            },
+            condition: {
+                regexFilter: "^https?://([^/?#]+\\.)?example\\.com(?::[0-9]+)?/news",
+                resourceTypes: ["main_frame"],
+                isUrlFilterCaseSensitive: true
+            }
+        },
+        {
+            id: 3,
+            priority: 1,
+            action: {
+                type: "redirect",
+                redirect: {
+                    extensionPath: "/blocked.html"
+                }
+            },
+            condition: {
+                regexFilter: "^https?://([^/?#]+\\.)?example\\.com(?::[0-9]+)?/articles\\/[0-9]+",
+                resourceTypes: ["main_frame"],
+                isUrlFilterCaseSensitive: true
+            }
         }
     ]);
 });
