@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { normalizeStoredRules, validateRuleInput } from "../../src/popup/validation.js";
+import { getCurrentSiteFromUrl, normalizeStoredRules, validateRuleInput } from "../../src/popup/validation.js";
 
 test("accepts plain domains, paths, URLs, regex paths, localhost, and IDN domains", () => {
     const validRules = [
@@ -118,4 +118,16 @@ test("normalizes existing stored rules after extension updates", () => {
             "ввв.рф"
         ]
     );
+});
+
+test("extracts the current site from a regular tab URL", () => {
+    assert.equal(getCurrentSiteFromUrl("https://www.linkedin.com/feed"), "linkedin.com");
+    assert.equal(getCurrentSiteFromUrl("https://example.com/news?x=1#top"), "example.com");
+    assert.equal(getCurrentSiteFromUrl("http://openai.com/"), "openai.com");
+});
+
+test("rejects non-web tab URLs for current-site capture", () => {
+    assert.equal(getCurrentSiteFromUrl("chrome://extensions/"), null);
+    assert.equal(getCurrentSiteFromUrl("about:blank"), null);
+    assert.equal(getCurrentSiteFromUrl("not-a-url"), null);
 });
