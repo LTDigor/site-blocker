@@ -4,14 +4,14 @@ export function validateRuleInput(value) {
     if (!rule) {
         return {
             isValid: false,
-            message: "Enter a site or URL rule first."
+            message: "Enter a site or URL first."
         };
     }
 
     if (/\s/.test(rule)) {
         return {
             isValid: false,
-            message: "Rules cannot contain spaces."
+            message: "Blocked sites cannot contain spaces."
         };
     }
 
@@ -34,13 +34,40 @@ export function validateRuleInput(value) {
     if (!isValidRegexPath(parsedRule.path)) {
         return {
             isValid: false,
-            message: "Enter a valid regular expression rule."
+            message: "Enter a valid regular expression path."
         };
     }
 
     return {
         isValid: true,
         value: normalizeRule(parsedRule)
+    };
+}
+
+export function validateLocalImageFile(file, maxSizeBytes = 4 * 1024 * 1024) {
+    if (!file) {
+        return {
+            isValid: false,
+            message: "Choose an image file first."
+        };
+    }
+
+    if (!file.type?.startsWith("image/")) {
+        return {
+            isValid: false,
+            message: "Choose a valid image file."
+        };
+    }
+
+    if (file.size > maxSizeBytes) {
+        return {
+            isValid: false,
+            message: "Choose an image up to 4 MB."
+        };
+    }
+
+    return {
+        isValid: true
     };
 }
 

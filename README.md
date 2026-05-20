@@ -34,8 +34,9 @@ URL Image Blocker блокирует сайты и отдельные URL-адр
 2. Введите домен или URL, который нужно заблокировать.
 3. Нажмите `Add`.
 4. Чтобы быстро заблокировать текущий сайт, нажмите `Add current site`.
+5. В блоке `Block image` нажмите `Choose local image`, чтобы заменить картинку на странице блокировки. Кнопка `Reset` возвращает стандартную картинку.
 
-Примеры правил:
+Примеры записей:
 
 - `example.com` — блокирует весь домен.
 - `example.com/news` — блокирует путь, начинающийся с `/news`.
@@ -79,8 +80,9 @@ URL Image Blocker blocks websites and specific URLs from a custom list. When a u
 2. Enter the domain or URL you want to block.
 3. Click `Add`.
 4. To block the site you're on right now, click `Add current site`.
+5. In `Block image`, click `Choose local image` to replace the image shown on the block page. `Reset` restores the default image.
 
-Rule examples:
+Blocked site examples:
 
 - `example.com` blocks the entire domain.
 - `example.com/news` blocks any path that starts with `/news`.

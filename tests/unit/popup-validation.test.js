@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { getCurrentSiteFromUrl, normalizeStoredRules, validateRuleInput } from "../../src/popup/validation.js";
+import {
+    getCurrentSiteFromUrl,
+    normalizeStoredRules,
+    validateLocalImageFile,
+    validateRuleInput
+} from "../../src/popup/validation.js";
 
 test("accepts plain domains, paths, URLs, regex paths, localhost, and IDN domains", () => {
     const validRules = [
@@ -61,14 +66,14 @@ test("drops query strings and hashes before saving", () => {
 test("rejects empty input", () => {
     assert.deepEqual(validateRuleInput("   "), {
         isValid: false,
-        message: "Enter a site or URL rule first."
+        message: "Enter a site or URL first."
     });
 });
 
 test("rejects rules with whitespace", () => {
     assert.deepEqual(validateRuleInput("example .com"), {
         isValid: false,
-        message: "Rules cannot contain spaces."
+        message: "Blocked sites cannot contain spaces."
     });
 });
 
@@ -98,7 +103,7 @@ test("rejects invalid hostnames", () => {
 test("rejects invalid regex path rules", () => {
     assert.deepEqual(validateRuleInput("example.com/^["), {
         isValid: false,
-        message: "Enter a valid regular expression rule."
+        message: "Enter a valid regular expression path."
     });
 });
 
@@ -130,4 +135,27 @@ test("rejects non-web tab URLs for current-site capture", () => {
     assert.equal(getCurrentSiteFromUrl("chrome://extensions/"), null);
     assert.equal(getCurrentSiteFromUrl("about:blank"), null);
     assert.equal(getCurrentSiteFromUrl("not-a-url"), null);
+});
+
+test("accepts local image files within the size limit", () => {
+    assert.deepEqual(validateLocalImageFile({ type: "image/png", size: 1024 }), {
+        isValid: true
+    });
+});
+
+test("rejects missing, non-image, and oversized local image files", () => {
+    assert.deepEqual(validateLocalImageFile(null), {
+        isValid: false,
+        message: "Choose an image file first."
+    });
+
+    assert.deepEqual(validateLocalImageFile({ type: "text/plain", size: 1024 }), {
+        isValid: false,
+        message: "Choose a valid image file."
+    });
+
+    assert.deepEqual(validateLocalImageFile({ type: "image/jpeg", size: 5 * 1024 * 1024 }), {
+        isValid: false,
+        message: "Choose an image up to 4 MB."
+    });
 });
