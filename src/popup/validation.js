@@ -24,6 +24,13 @@ export function validateRuleInput(value) {
 
     const parsedRule = parseInputRule(rule);
 
+    if (parsedRule.hasUnsupportedAuthority) {
+        return {
+            isValid: false,
+            message: "Rules cannot include credentials or ports."
+        };
+    }
+
     if (!isValidHostname(parsedRule.hostname)) {
         return {
             isValid: false,
@@ -108,7 +115,15 @@ function parseInputRule(rule) {
 
     if (isHttpUrl) {
         try {
-            new URL(rule);
+            const url = new URL(rule);
+
+            if (url.username || url.password || url.port) {
+                return {
+                    hostname: "",
+                    path: "",
+                    hasUnsupportedAuthority: true
+                };
+            }
         } catch {
             return {
                 hostname: "",
@@ -120,9 +135,20 @@ function parseInputRule(rule) {
     const withoutProtocol = rule.replace(/^https?:\/\//i, "");
     const hostEndIndex = findFirstIndex(withoutProtocol, ["/", "?", "#"]);
     const hostname = withoutProtocol.slice(0, hostEndIndex);
+
+    if (hostname.includes("@") || hostname.includes(":")) {
+        return {
+            hostname: "",
+            path: "",
+            hasUnsupportedAuthority: true
+        };
+    }
+
     const pathAndSuffix = withoutProtocol.slice(hostEndIndex);
     const pathEndIndex = findFirstIndex(pathAndSuffix, ["?", "#"]);
-    const path = pathAndSuffix.startsWith("/") ? pathAndSuffix.slice(0, pathEndIndex) : "";
+    const path = pathAndSuffix.startsWith("/") ?
+        normalizePath(pathAndSuffix.slice(0, pathEndIndex)) :
+        "";
 
     return {
         hostname: hostname.replace(/\/$/, ""),
@@ -146,6 +172,16 @@ function normalizeRule({ hostname, path }) {
     }
 
     return `${normalizedHostname}${path}`;
+}
+
+function normalizePath(path) {
+    const pathPart = path.replace(/^\//, "");
+
+    if (pathPart.startsWith("^")) {
+        return path;
+    }
+
+    return new URL(path, "https://example.test").pathname;
 }
 
 function isValidRegexPath(path) {

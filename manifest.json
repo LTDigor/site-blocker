@@ -5,12 +5,13 @@
 
   "permissions": [
     "storage",
-    "webNavigation",
-    "tabs"
+    "declarativeNetRequest",
+    "activeTab"
   ],
 
   "host_permissions": [
-    "<all_urls>"
+    "http://*/*",
+    "https://*/*"
   ],
 
   "background": {
@@ -25,11 +26,12 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "src/blocked/block.html",
-        "src/blocked/blocked.js",
-        "assets/images/image.jpg"
+        "src/blocked/block.html"
       ],
-      "matches": ["<all_urls>"]
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ]
     }
   ]
 }

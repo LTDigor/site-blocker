@@ -16,7 +16,8 @@ test("accepts plain domains, paths, URLs, regex paths, localhost, and IDN domain
         ["example.com/^articles/[0-9]+", "example.com/^articles/[0-9]+"],
         ["localhost", "localhost"],
         ["ввв.рф", "ввв.рф"],
-        ["https://пример.рф/news", "пример.рф/news"]
+        ["https://пример.рф/news", "пример.рф/news"],
+        ["example.com/café", "example.com/caf%C3%A9"]
     ];
 
     for (const [rule, expectedValue] of validRules) {
@@ -84,6 +85,21 @@ test("rejects unsupported protocols", () => {
     });
 });
 
+test("rejects credentials and ports because rules are host/path based", () => {
+    const invalidRules = [
+        "https://user:pass@example.com/private",
+        "example.com:8443/admin",
+        "https://example.com:8443/admin"
+    ];
+
+    for (const rule of invalidRules) {
+        assert.deepEqual(validateRuleInput(rule), {
+            isValid: false,
+            message: "Rules cannot include credentials or ports."
+        });
+    }
+});
+
 test("rejects invalid hostnames", () => {
     const invalidRules = [
         "not-a-url",
@@ -113,13 +129,17 @@ test("normalizes existing stored rules after extension updates", () => {
             "https://www.linkedin.com",
             "linkedin.com",
             "https://www.linkedin.com/feed?x=1#top",
+            "https://example.com:8443/admin",
+            "https://user:pass@example.com/private",
             "example.com/^[",
             "ftp://example.com",
+            "example.com/café",
             "ввв.рф"
         ]),
         [
             "linkedin.com",
             "linkedin.com/feed",
+            "example.com/caf%C3%A9",
             "ввв.рф"
         ]
     );
