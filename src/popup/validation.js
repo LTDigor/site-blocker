@@ -62,6 +62,20 @@ export function normalizeStoredRules(rules) {
     return normalizedRules;
 }
 
+export function getCurrentSiteFromUrl(urlString) {
+    try {
+        const url = new URL(urlString);
+
+        if (url.protocol !== "http:" && url.protocol !== "https:") {
+            return null;
+        }
+
+        return url.hostname.replace(/^www\./i, "");
+    } catch {
+        return null;
+    }
+}
+
 function parseInputRule(rule) {
     const isHttpUrl = /^https?:\/\//i.test(rule);
 

@@ -33,6 +33,7 @@ URL Image Blocker блокирует сайты и отдельные URL-адр
 1. Нажмите на иконку расширения в панели браузера.
 2. Введите домен или URL, который нужно заблокировать.
 3. Нажмите `Add`.
+4. Чтобы быстро заблокировать текущий сайт, нажмите `Add current site`.
 
 Примеры правил:
 
@@ -77,6 +78,7 @@ URL Image Blocker blocks websites and specific URLs from a custom list. When a u
 1. Click the extension icon in the browser toolbar.
 2. Enter the domain or URL you want to block.
 3. Click `Add`.
+4. To block the site you're on right now, click `Add current site`.
 
 Rule examples:
 

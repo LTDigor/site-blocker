@@ -1,7 +1,8 @@
-import { normalizeStoredRules, validateRuleInput } from "./validation.js";
+import { getCurrentSiteFromUrl, normalizeStoredRules, validateRuleInput } from "./validation.js";
 
 const input = document.getElementById("siteInput");
 const form = document.getElementById("ruleForm");
+const currentSiteButton = document.getElementById("currentSiteBtn");
 const list = document.getElementById("list");
 const counter = document.getElementById("counter");
 const emptyState = document.getElementById("emptyState");
@@ -67,6 +68,23 @@ function setHint(message, isError = false) {
     formHint.classList.toggle("is-error", isError);
 }
 
+function saveRule(rule, successMessage, duplicateMessage) {
+    storage.get(["blockedSites"], (data) => {
+        const sites = data.blockedSites || [];
+
+        if (sites.includes(rule)) {
+            setHint(duplicateMessage, true);
+            input.select();
+            return;
+        }
+
+        sites.push(rule);
+        save(sites);
+        input.value = "";
+        setHint(successMessage);
+    });
+}
+
 form.onsubmit = (event) => {
     event.preventDefault();
 
@@ -78,19 +96,20 @@ form.onsubmit = (event) => {
     }
 
     const site = validation.value;
+    saveRule(site, "Rule added.", "This rule is already in the list.");
+};
 
-    storage.get(["blockedSites"], (data) => {
-        const sites = data.blockedSites || [];
-        if (sites.includes(site)) {
-            setHint("This rule is already in the list.", true);
-            input.select();
+currentSiteButton.onclick = () => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        const site = getCurrentSiteFromUrl(tabs?.[0]?.url);
+
+        if (!site) {
+            setHint("Open a regular website to add its current site.", true);
             return;
         }
 
-        sites.push(site);
-        save(sites);
-        input.value = "";
-        setHint("Rule added.");
+        input.value = site;
+        saveRule(site, "Current site added.", "This site is already in the list.");
     });
 };
 

@@ -128,6 +128,27 @@ h2 {
     transform: translateY(1px);
 }
 
+.current-site-button {
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-strong);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.current-site-button:hover {
+    border-color: var(--accent);
+    background: #e4edff;
+}
+
+.current-site-button:active {
+    transform: translateY(1px);
+}
+
 .hint {
     min-height: 17px;
     color: var(--muted);
