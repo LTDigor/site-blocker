@@ -1,4 +1,4 @@
-# URL Image Blocker
+# Site Blocker
 
 ## Язык / Language
 
