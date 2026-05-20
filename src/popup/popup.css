@@ -18,7 +18,7 @@
 
 body {
     width: 360px;
-    min-height: 440px;
+    min-height: 560px;
     margin: 0;
     background:
         linear-gradient(180deg, #eaf1ff 0, rgba(234, 241, 255, 0) 150px),
@@ -34,7 +34,7 @@ input {
 
 .popup-shell {
     display: grid;
-    gap: 18px;
+    gap: 14px;
     padding: 18px;
 }
 
@@ -65,6 +65,7 @@ h2 {
 }
 
 .rule-form,
+.image-section,
 .rules-section {
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -149,11 +150,83 @@ h2 {
     transform: translateY(1px);
 }
 
+.image-section {
+    overflow: hidden;
+}
+
+.image-controls {
+    display: grid;
+    grid-template-columns: 1fr 82px;
+    gap: 8px;
+    padding: 14px 14px 9px;
+}
+
+.image-picker,
+.reset-image-button {
+    display: grid;
+    min-width: 0;
+    height: 36px;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.image-picker:hover,
+.reset-image-button:hover {
+    border-color: var(--accent);
+    background: #e4edff;
+}
+
+.reset-image-button:disabled {
+    border-color: var(--border);
+    background: var(--surface-strong);
+    color: var(--muted);
+    cursor: not-allowed;
+    opacity: 0.68;
+}
+
+.image-picker:active,
+.reset-image-button:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+#imageInput {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+}
+
+.reset-image-button {
+    padding: 0 12px;
+}
+
+.image-state {
+    min-width: 64px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 800;
+    text-align: right;
+}
+
 .hint {
     min-height: 17px;
     color: var(--muted);
     font-size: 12px;
     line-height: 1.4;
+}
+
+.image-section .hint {
+    padding: 0 14px 14px;
 }
 
 .hint.is-error {
@@ -169,9 +242,31 @@ h2 {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    width: 100%;
     padding: 12px 14px;
     border-bottom: 1px solid var(--border);
     background: var(--surface-strong);
+}
+
+.section-toggle {
+    border-width: 0 0 1px;
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+}
+
+.section-toggle:hover {
+    background: #e4edff;
+}
+
+.rules-section.is-collapsed .section-header {
+    border-bottom: 0;
+}
+
+.section-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .counter {
@@ -184,6 +279,21 @@ h2 {
     color: var(--muted);
     font-size: 12px;
     font-weight: 800;
+}
+
+.expand-icon {
+    display: inline-grid;
+    width: 18px;
+    height: 18px;
+    place-items: center;
+    color: var(--muted);
+    font-size: 18px;
+    line-height: 1;
+    transition: transform 160ms ease;
+}
+
+.rules-section:not(.is-collapsed) .expand-icon {
+    transform: rotate(90deg);
 }
 
 .empty-state {
@@ -199,20 +309,18 @@ h2 {
 
 .rules-list {
     display: grid;
-    max-height: 210px;
     margin: 0;
     padding: 0;
-    overflow-y: auto;
     list-style: none;
 }
 
 .rule-item {
     display: grid;
     grid-template-columns: 1fr 32px;
-    align-items: center;
+    align-items: start;
     gap: 10px;
-    min-height: 48px;
-    padding: 9px 10px 9px 14px;
+    min-height: 52px;
+    padding: 11px 10px 11px 14px;
     border-top: 1px solid var(--border);
 }
 
@@ -221,13 +329,11 @@ h2 {
 }
 
 .rule-text {
-    overflow: hidden;
     color: var(--text);
     font-size: 13px;
     font-weight: 650;
     line-height: 1.35;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 
 .remove-button {

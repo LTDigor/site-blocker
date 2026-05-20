@@ -14,10 +14,10 @@
     </header>
 
     <form class="rule-form" id="ruleForm">
-        <label class="input-label" for="siteInput">Site or URL rule</label>
+        <label class="input-label" for="siteInput">Site or URL</label>
         <div class="input-row">
             <input id="siteInput" placeholder="example.com/news" autocomplete="off">
-            <button class="add-button" id="addBtn" type="submit" aria-label="Add rule" title="Add rule">+</button>
+            <button class="add-button" id="addBtn" type="submit" aria-label="Add blocked site" title="Add blocked site">+</button>
         </div>
         <button class="current-site-button" id="currentSiteBtn" type="button">
             Add current site
@@ -25,14 +25,37 @@
         <p class="hint" id="formHint">Use a domain, path prefix, or regex path.</p>
     </form>
 
-    <section class="rules-section" aria-label="Blocked rules">
+    <section class="rules-section is-collapsed" id="rulesSection" aria-label="Blocked sites">
+        <button class="section-header section-toggle" id="rulesToggle" type="button" aria-expanded="false" aria-controls="rulesContent">
+            <h2>Blocked sites</h2>
+            <span class="section-meta">
+                <span class="counter" id="counter">0</span>
+                <span class="expand-icon" aria-hidden="true">›</span>
+            </span>
+        </button>
+
+        <div class="rules-content" id="rulesContent" hidden>
+            <p class="empty-state" id="emptyState">No blocked sites yet.</p>
+            <ul class="rules-list" id="list"></ul>
+        </div>
+    </section>
+
+    <section class="image-section" aria-label="Blocked page image">
         <div class="section-header">
-            <h2>Rules</h2>
-            <span class="counter" id="counter">0</span>
+            <h2>Block image</h2>
+            <span class="image-state" id="imageState">Default</span>
         </div>
 
-        <p class="empty-state" id="emptyState">No blocked sites yet.</p>
-        <ul class="rules-list" id="list"></ul>
+        <div class="image-controls">
+            <label class="image-picker" for="imageInput">
+                Choose local image
+            </label>
+            <input id="imageInput" type="file" accept="image/*">
+            <button class="reset-image-button" id="resetImageBtn" type="button">
+                Reset
+            </button>
+        </div>
+        <p class="hint" id="imageHint">Image files up to 4 MB.</p>
     </section>
 </main>
 
