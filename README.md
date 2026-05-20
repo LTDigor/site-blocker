@@ -1,6 +1,6 @@
 # URL Image Blocker
 
-## Language / Язык
+## Язык / Language
 
 [Русская версия](#русская-версия) | [English Version](#english-version)
 
@@ -40,6 +40,14 @@ URL Image Blocker блокирует сайты и отдельные URL-адр
 - `example.com/news` — блокирует путь, начинающийся с `/news`.
 - `example.com/^articles/[0-9]+` — блокирует путь по регулярному выражению.
 
+### Структура проекта
+
+- `manifest.json` — конфигурация расширения.
+- `src/background/` — service worker и логика блокировки.
+- `src/popup/` — интерфейс popup-окна расширения.
+- `src/blocked/` — страница, которая показывается вместо заблокированного сайта.
+- `assets/images/` — изображения и медиафайлы.
+
 ## English Version
 
 Recently, I had an idea for a genuinely cool app that could change the lives of millions of users. To build it, I used AI. Do you know how long the entire development process took me, from the first prompt to the finished application? 47 seconds. Not minutes. Not hours. Not days.
@@ -75,3 +83,11 @@ Rule examples:
 - `example.com` blocks the entire domain.
 - `example.com/news` blocks any path that starts with `/news`.
 - `example.com/^articles/[0-9]+` blocks paths using a regular expression.
+
+### Project structure
+
+- `manifest.json` contains the extension configuration.
+- `src/background/` contains the service worker and blocking logic.
+- `src/popup/` contains the extension popup UI.
+- `src/blocked/` contains the page shown instead of a blocked website.
+- `assets/images/` contains images and media files.
