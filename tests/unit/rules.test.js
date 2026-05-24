@@ -71,6 +71,16 @@ test("matches whole domains and subdomains", () => {
     assert.equal(matchesUrl("https://notexample.com/", rules), false);
 });
 
+test("matches YouTube domain rules on common entry URLs", () => {
+    const rules = [parseRule("youtube.com")];
+
+    assert.equal(matchesUrl("https://youtube.com/", rules), true);
+    assert.equal(matchesUrl("https://www.youtube.com/", rules), true);
+    assert.equal(matchesUrl("https://m.youtube.com/shorts/abc123", rules), true);
+    assert.equal(matchesUrl("https://music.youtube.com/watch?v=abc123", rules), true);
+    assert.equal(matchesUrl("https://youtube-nocookie.com/embed/abc123", rules), false);
+});
+
 test("matches path prefixes", () => {
     const rules = [parseRule("example.com/news")];
 
