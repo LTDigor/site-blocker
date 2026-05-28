@@ -1,15 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-test("adding the current site saves it and opens the block page immediately", async () => {
-    const { elements, chrome, state } = await setupPopupTest({
+test("adding the current site saves it and opens the block page immediately", async (t) => {
+    const { elements, chrome, state, cleanup } = await setupPopupTest({
         activeTab: {
             id: 42,
             url: "https://www.example.com/news"
         }
     });
+    t.after(cleanup);
 
-    elements.currentSiteBtn.onclick();
+    await elements.currentSiteBtn.onclick();
 
     assert.deepEqual(state.blockedSites, ["example.com"]);
     assert.equal(elements.siteInput.value, "");
@@ -18,14 +19,14 @@ test("adding the current site saves it and opens the block page immediately", as
         {
             tabId: 42,
             options: {
-                url: "chrome-extension://test/src/blocked/block.html"
+                url: "chrome-extension://test/src/blocked/block.html?blockedRule=example.com"
             }
         }
     ]);
 });
 
-test("adding an already blocked current site still opens the block page", async () => {
-    const { elements, chrome, state } = await setupPopupTest({
+test("adding an already blocked current site still opens the block page", async (t) => {
+    const { elements, chrome, state, cleanup } = await setupPopupTest({
         activeTab: {
             id: 42,
             url: "https://example.com/news"
@@ -34,8 +35,9 @@ test("adding an already blocked current site still opens the block page", async 
             blockedSites: ["example.com"]
         }
     });
+    t.after(cleanup);
 
-    elements.currentSiteBtn.onclick();
+    await elements.currentSiteBtn.onclick();
 
     assert.deepEqual(state.blockedSites, ["example.com"]);
     assert.equal(elements.siteInput.value, "example.com");
@@ -45,14 +47,14 @@ test("adding an already blocked current site still opens the block page", async 
         {
             tabId: 42,
             options: {
-                url: "chrome-extension://test/src/blocked/block.html"
+                url: "chrome-extension://test/src/blocked/block.html?blockedRule=example.com"
             }
         }
     ]);
 });
 
-test("blocked sites starts collapsed and expands when clicked", async () => {
-    const { elements } = await setupPopupTest({
+test("blocked sites starts collapsed and expands when clicked", async (t) => {
+    const { elements, cleanup } = await setupPopupTest({
         activeTab: {
             id: 42,
             url: "https://example.com/news"
@@ -61,6 +63,7 @@ test("blocked sites starts collapsed and expands when clicked", async () => {
             blockedSites: ["example.com", "openai.com"]
         }
     });
+    t.after(cleanup);
 
     assert.equal(elements.rulesContent.hidden, true);
     assert.equal(elements.rulesToggle["aria-expanded"], "false");
@@ -79,10 +82,138 @@ test("blocked sites starts collapsed and expands when clicked", async () => {
     assert.equal(elements.rulesSection.classList.has("is-collapsed"), true);
 });
 
-async function setupPopupTest({ activeTab, initialState = {} }) {
+test("temporarily unblocking a blocked site confirms with block image preview", async (t) => {
+    const now = 1_700_000_000_000;
+    const { elements, chrome, state, cleanup } = await setupPopupTest({
+        activeTab: {
+            id: 42,
+            url: "chrome-extension://test/src/blocked/block.html?blockedRule=example.com"
+        },
+        initialState: {
+            blockedSites: ["example.com", "openai.com"],
+            blockedImageDataUrl: "data:image/png;base64,custom"
+        },
+        now
+    });
+    t.after(cleanup);
+
+    const unblockButton = elements.currentUnblockBtn;
+    unblockButton.onclick();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert.equal(elements.unblockDialog.open, true);
+    assert.equal(elements.unblockPreview.src, "data:image/png;base64,custom");
+    assert.equal(elements.unblockDialogText.textContent, "example.com will be available for 10 minutes.");
+
+    await elements.confirmUnblockBtn.onclick();
+
+    assert.deepEqual(state.blockedSites, ["example.com", "openai.com"]);
+    assert.deepEqual(state.temporaryUnblocks, {
+        "example.com": now + 10 * 60 * 1000
+    });
+    assert.notEqual(elements.formHint.textContent, "example.com unblocked for 10 minutes.");
+    assert.equal(elements.unblockDialog.open, false);
+    assert.equal(elements.currentBlockStatus.textContent.startsWith("Unblocked until "), true);
+    assert.deepEqual(chrome.tabs.updatedTabs, [
+        {
+            tabId: 42,
+            options: {
+                url: "https://example.com/"
+            }
+        }
+    ]);
+});
+
+test("popup on a blocked page only shows the currently blocked site as unblockable", async (t) => {
+    const { elements, cleanup } = await setupPopupTest({
+        activeTab: {
+            id: 42,
+            url: "chrome-extension://test/src/blocked/block.html?blockedRule=openai.com"
+        },
+        initialState: {
+            blockedSites: ["example.com", "openai.com"]
+        }
+    });
+    t.after(cleanup);
+
+    assert.equal(elements.rulesContent.hidden, false);
+    assert.equal(elements.counter.textContent, 2);
+    assert.equal(elements.list.children.length, 2);
+    assert.equal(elements.currentBlockSection.classList.has("is-hidden"), false);
+    assert.equal(elements.currentBlockSite.textContent, "openai.com");
+    assert.equal(elements.currentUnblockBtn.textContent, "Unblock 10 min");
+});
+
+test("popup ignores non-extension pages that look like the block page", async (t) => {
+    const { elements, cleanup } = await setupPopupTest({
+        activeTab: {
+            id: 42,
+            url: "https://attacker.test/src/blocked/block.html?blockedRule=openai.com"
+        },
+        initialState: {
+            blockedSites: ["example.com", "openai.com"]
+        }
+    });
+    t.after(cleanup);
+
+    assert.equal(elements.rulesContent.hidden, true);
+    assert.equal(elements.currentBlockSection.classList.has("is-hidden"), true);
+});
+
+test("popup shows unblock action when only one blocked site exists without blocked page context", async (t) => {
+    const { elements, cleanup } = await setupPopupTest({
+        activeTab: {
+            id: 42,
+            url: "https://example.com/"
+        },
+        initialState: {
+            blockedSites: ["example.com"]
+        }
+    });
+    t.after(cleanup);
+
+    assert.equal(elements.rulesContent.hidden, true);
+    assert.equal(elements.currentBlockSection.classList.has("is-hidden"), false);
+    assert.equal(elements.currentBlockSite.textContent, "example.com");
+    assert.equal(elements.currentUnblockBtn.textContent, "Unblock 10 min");
+});
+
+test("adding an already blocked site again clears its temporary unblock", async (t) => {
+    const now = 1_700_000_000_000;
+    const { elements, state, cleanup } = await setupPopupTest({
+        activeTab: {
+            id: 42,
+            url: "chrome-extension://test/src/blocked/block.html?blockedRule=youtube.com"
+        },
+        initialState: {
+            blockedSites: ["youtube.com"],
+            temporaryUnblocks: {
+                "youtube.com": now + 10 * 60 * 1000
+            }
+        },
+        now
+    });
+    t.after(cleanup);
+
+    assert.equal(elements.currentBlockStatus.textContent.startsWith("Unblocked until "), true);
+
+    elements.siteInput.value = "youtube.com";
+    await elements.ruleForm.onsubmit({
+        preventDefault() {}
+    });
+
+    assert.deepEqual(state.temporaryUnblocks, {});
+    assert.equal(elements.currentBlockStatus.textContent, "");
+    assert.equal(elements.currentUnblockBtn.textContent, "Unblock 10 min");
+    assert.equal(elements.formHint.textContent, "Blocked site restored.");
+});
+
+async function setupPopupTest({ activeTab, initialState = {}, now }) {
     const previousChrome = globalThis.chrome;
     const previousDocument = globalThis.document;
     const previousFileReader = globalThis.FileReader;
+    const previousDateNow = Date.now;
 
     const elements = createPopupElements();
     const state = {
@@ -94,19 +225,24 @@ async function setupPopupTest({ activeTab, initialState = {} }) {
     globalThis.chrome = chrome;
     globalThis.document = createDocumentMock(elements);
     globalThis.FileReader = class {};
-
-    try {
-        await import(`../../src/popup/popup.js?test=${Date.now()}-${Math.random()}`);
-    } finally {
-        globalThis.chrome = previousChrome;
-        globalThis.document = previousDocument;
-        globalThis.FileReader = previousFileReader;
+    if (now) {
+        Date.now = () => now;
     }
+
+    await import(`../../src/popup/popup.js?test=${Date.now()}-${Math.random()}`);
+    await Promise.resolve();
+    await Promise.resolve();
 
     return {
         elements,
         chrome,
-        state
+        state,
+        cleanup() {
+            globalThis.chrome = previousChrome;
+            globalThis.document = previousDocument;
+            globalThis.FileReader = previousFileReader;
+            Date.now = previousDateNow;
+        }
     };
 }
 
@@ -125,7 +261,16 @@ function createPopupElements() {
         "list",
         "counter",
         "emptyState",
-        "formHint"
+        "formHint",
+        "currentBlockSection",
+        "currentBlockSite",
+        "currentBlockStatus",
+        "currentUnblockBtn",
+        "unblockDialog",
+        "unblockPreview",
+        "unblockDialogText",
+        "cancelUnblockBtn",
+        "confirmUnblockBtn"
     ];
 
     return Object.fromEntries(ids.map((id) => [id, createElementMock()]));
@@ -143,25 +288,43 @@ function createDocumentMock(elements) {
 }
 
 function createElementMock() {
-    return {
+    const element = {
         children: [],
         classList: createClassListMock(),
         disabled: false,
         files: [],
-        innerHTML: "",
         textContent: "",
         value: "",
+        open: false,
         appendChild(child) {
             this.children.push(child);
+        },
+        close() {
+            this.open = false;
         },
         focus() {},
         select() {
             this.wasSelected = true;
         },
+        showModal() {
+            this.open = true;
+        },
         setAttribute(name, value) {
             this[name] = value;
         }
     };
+
+    Object.defineProperty(element, "innerHTML", {
+        get() {
+            return this._innerHTML || "";
+        },
+        set(value) {
+            this._innerHTML = value;
+            this.children = [];
+        }
+    });
+
+    return element;
 }
 
 function createClassListMock() {
@@ -188,12 +351,26 @@ function createChromeMock(state, activeTab) {
         runtime: {
             getURL(path) {
                 return `chrome-extension://test/${path}`;
+            },
+            sendMessage(message, callback) {
+                if (message.type === "temporaryUnblock") {
+                    state.temporaryUnblocks = {
+                        ...(state.temporaryUnblocks || {}),
+                        [message.site]: message.expiresAt
+                    };
+                    callback?.({ ok: true });
+                    return;
+                }
+
+                callback?.({ ok: false, message: "Unknown message" });
             }
         },
         storage: {
             local: {
                 get(keys, callback) {
-                    callback(Object.fromEntries(keys.map((key) => [key, state[key]])));
+                    const result = Object.fromEntries(keys.map((key) => [key, state[key]]));
+                    callback?.(result);
+                    return result;
                 },
                 set(nextState, callback) {
                     Object.assign(state, nextState);
@@ -212,10 +389,12 @@ function createChromeMock(state, activeTab) {
             updatedTabs: [],
             query(queryInfo, callback) {
                 this.lastQuery = queryInfo;
-                callback([activeTab]);
+                callback?.([activeTab]);
+                return [activeTab];
             },
-            update(tabId, options) {
+            update(tabId, options, callback) {
                 this.updatedTabs.push({ tabId, options });
+                callback?.();
             }
         }
     };

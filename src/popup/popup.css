@@ -66,6 +66,7 @@ h2 {
 
 .rule-form,
 .image-section,
+.current-block-section,
 .rules-section {
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -152,6 +153,32 @@ h2 {
 
 .image-section {
     overflow: hidden;
+}
+
+.current-block-section {
+    overflow: hidden;
+}
+
+.current-block-section.is-hidden {
+    display: none;
+}
+
+.current-block-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 96px;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 10px 12px 14px;
+}
+
+.current-block-content .rule-status {
+    grid-column: 1 / -1;
+    grid-row: 2;
+}
+
+.current-block-content .unblock-button {
+    grid-column: 2;
+    grid-row: 1 / span 2;
 }
 
 .image-controls {
@@ -316,16 +343,26 @@ h2 {
 
 .rule-item {
     display: grid;
-    grid-template-columns: 1fr 32px;
-    align-items: start;
+    grid-template-columns: minmax(0, 1fr) 96px 32px;
+    align-items: center;
     gap: 10px;
     min-height: 52px;
     padding: 11px 10px 11px 14px;
     border-top: 1px solid var(--border);
 }
 
+.rule-item-static {
+    grid-template-columns: minmax(0, 1fr) 32px;
+}
+
 .rule-item:first-child {
     border-top: 0;
+}
+
+.rule-details {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
 }
 
 .rule-text {
@@ -334,6 +371,37 @@ h2 {
     font-weight: 650;
     line-height: 1.35;
     overflow-wrap: anywhere;
+}
+
+.rule-status {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.unblock-button {
+    min-width: 0;
+    min-height: 32px;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.15;
+    transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.unblock-button:hover {
+    border-color: var(--accent);
+    background: #e4edff;
+}
+
+.unblock-button:active {
+    transform: translateY(1px);
 }
 
 .remove-button {
@@ -354,4 +422,69 @@ h2 {
 .remove-button:hover {
     background: rgba(220, 38, 38, 0.1);
     color: var(--danger);
+}
+
+.confirm-dialog {
+    width: min(318px, calc(100vw - 28px));
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+}
+
+.confirm-dialog::backdrop {
+    background: rgba(15, 23, 42, 0.48);
+}
+
+.confirm-panel {
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.confirm-image {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 8px;
+    background: #000000;
+    object-fit: cover;
+}
+
+.confirm-copy {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.confirm-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.secondary-button,
+.confirm-button {
+    min-width: 0;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.secondary-button {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+}
+
+.confirm-button {
+    border: 0;
+    background: var(--accent);
+    color: #ffffff;
 }

@@ -1,5 +1,6 @@
 (function () {
     const BLOCKED_SITES_KEY = "blockedSites";
+    const TEMPORARY_UNBLOCKS_KEY = "temporaryUnblocks";
     const BLOCKED_PAGE_PATH = "src/blocked/block.html";
 
     const nativeApi = globalThis.browser || globalThis.chrome;
@@ -62,6 +63,35 @@
         }, []);
     }
 
+    function pruneExpiredTemporaryUnblocks(temporaryUnblocks = {}, now = Date.now()) {
+        return Object.fromEntries(
+            Object.entries(temporaryUnblocks)
+                .filter(([, expiresAt]) => Number.isFinite(expiresAt) && expiresAt > now)
+        );
+    }
+
+    function filterTemporarilyUnblockedRules(rawRules, temporaryUnblocks = {}) {
+        const activeUnblocks = pruneExpiredTemporaryUnblocks(temporaryUnblocks);
+
+        return rawRules.filter((rule) => !activeUnblocks[rule]);
+    }
+
+    function findMatchingRawRule(urlString, rawRules, temporaryUnblocks) {
+        const activeRules = filterTemporarilyUnblockedRules(rawRules || [], temporaryUnblocks || {});
+
+        for (const rawRule of activeRules) {
+            try {
+                if (matchesUrl(urlString, [parseRule(rawRule)])) {
+                    return rawRule;
+                }
+            } catch {
+                // Ignore invalid persisted rules so one bad entry does not break blocking.
+            }
+        }
+
+        return null;
+    }
+
     function normalizeDomain(domain) {
         return new URL(`https://${domain}`).hostname.replace(/^www\./i, "");
     }
@@ -108,36 +138,36 @@
         return false;
     }
 
-    function shouldBlockUrl(urlString, rawRules) {
-        try {
-            return matchesUrl(urlString, parseRules(rawRules || []));
-        } catch {
-            return false;
-        }
-    }
+    function redirectIfBlocked(rawRules, temporaryUnblocks) {
+        const blockedRule = findMatchingRawRule(globalThis.location.href, rawRules, temporaryUnblocks);
+        if (!blockedRule) return;
 
-    function redirectIfBlocked(rawRules) {
-        if (!shouldBlockUrl(globalThis.location.href, rawRules)) return;
-
-        globalThis.location.replace(nativeApi.runtime.getURL(BLOCKED_PAGE_PATH));
+        globalThis.location.replace(nativeApi.runtime.getURL(
+            `${BLOCKED_PAGE_PATH}?blockedRule=${encodeURIComponent(blockedRule)}`
+        ));
     }
 
     function readBlockedSites() {
+        const storageKeys = [BLOCKED_SITES_KEY, TEMPORARY_UNBLOCKS_KEY];
+
         if (globalThis.browser) {
-            nativeApi.storage.local.get([BLOCKED_SITES_KEY]).then((data) => {
-                redirectIfBlocked(data[BLOCKED_SITES_KEY]);
+            nativeApi.storage.local.get(storageKeys).then((data) => {
+                redirectIfBlocked(data[BLOCKED_SITES_KEY], data[TEMPORARY_UNBLOCKS_KEY]);
             });
             return;
         }
 
-        nativeApi.storage.local.get([BLOCKED_SITES_KEY], (data) => {
-            redirectIfBlocked(data[BLOCKED_SITES_KEY]);
+        nativeApi.storage.local.get(storageKeys, (data) => {
+            redirectIfBlocked(data[BLOCKED_SITES_KEY], data[TEMPORARY_UNBLOCKS_KEY]);
         });
     }
 
     nativeApi.storage.onChanged?.addListener((changes, areaName) => {
-        if (areaName === "local" && changes[BLOCKED_SITES_KEY]) {
-            redirectIfBlocked(changes[BLOCKED_SITES_KEY].newValue);
+        if (
+            areaName === "local" &&
+            (changes[BLOCKED_SITES_KEY] || changes[TEMPORARY_UNBLOCKS_KEY])
+        ) {
+            readBlockedSites();
         }
     });
 

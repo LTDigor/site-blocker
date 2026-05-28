@@ -3,9 +3,12 @@ import test from "node:test";
 
 import {
     buildDeclarativeNetRequestRules,
+    filterTemporarilyUnblockedRules,
+    getNextTemporaryUnblockExpiry,
     matchesUrl,
     parseRule,
-    parseRules
+    parseRules,
+    pruneExpiredTemporaryUnblocks
 } from "../../src/background/rules.js";
 
 test("parses domain rules", () => {
@@ -133,7 +136,7 @@ test("builds declarativeNetRequest redirect rules", () => {
             action: {
                 type: "redirect",
                 redirect: {
-                    extensionPath: "/blocked.html"
+                    extensionPath: "/blocked.html?blockedRule=example.com"
                 }
             },
             condition: {
@@ -148,7 +151,7 @@ test("builds declarativeNetRequest redirect rules", () => {
             action: {
                 type: "redirect",
                 redirect: {
-                    extensionPath: "/blocked.html"
+                    extensionPath: "/blocked.html?blockedRule=example.com%2Fnews"
                 }
             },
             condition: {
@@ -163,7 +166,7 @@ test("builds declarativeNetRequest redirect rules", () => {
             action: {
                 type: "redirect",
                 redirect: {
-                    extensionPath: "/blocked.html"
+                    extensionPath: "/blocked.html?blockedRule=example.com%2F%5Earticles%2F%5B0-9%5D%2B"
                 }
             },
             condition: {
@@ -173,4 +176,43 @@ test("builds declarativeNetRequest redirect rules", () => {
             }
         }
     ]);
+});
+
+test("filters active temporary unblocks before building rules", () => {
+    assert.deepEqual(
+        filterTemporarilyUnblockedRules(
+            ["example.com", "openai.com", "example.com/news"],
+            {
+                "example.com": 2000,
+                "example.com/news": 999,
+                "unknown.com": 2000
+            },
+            1000
+        ),
+        ["openai.com", "example.com/news"]
+    );
+
+    assert.deepEqual(
+        buildDeclarativeNetRequestRules(
+            ["example.com", "openai.com"],
+            "/blocked.html",
+            { "example.com": 2000 },
+            1000
+        ).map((rule) => rule.condition.urlFilter),
+        ["||openai.com^"]
+    );
+});
+
+test("prunes expired temporary unblocks and finds the next expiry", () => {
+    const activeUnblocks = pruneExpiredTemporaryUnblocks({
+        "example.com": 2000,
+        "openai.com": 1000,
+        "invalid.com": Number.NaN
+    }, 1500);
+
+    assert.deepEqual(activeUnblocks, {
+        "example.com": 2000
+    });
+    assert.equal(getNextTemporaryUnblockExpiry(activeUnblocks, 1500), 2000);
+    assert.equal(getNextTemporaryUnblockExpiry(activeUnblocks, 2500), null);
 });

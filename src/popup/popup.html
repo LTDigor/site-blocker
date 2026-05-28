@@ -25,6 +25,17 @@
         <p class="hint" id="formHint">Use a domain, path prefix, or regex path.</p>
     </form>
 
+    <section class="current-block-section is-hidden" id="currentBlockSection" aria-label="Current blocked site">
+        <div class="section-header">
+            <h2>Current blocked site</h2>
+        </div>
+        <div class="current-block-content">
+            <span class="rule-text" id="currentBlockSite"></span>
+            <span class="rule-status" id="currentBlockStatus"></span>
+            <button class="unblock-button" id="currentUnblockBtn" type="button">Unblock 10 min</button>
+        </div>
+    </section>
+
     <section class="rules-section is-collapsed" id="rulesSection" aria-label="Blocked sites">
         <button class="section-header section-toggle" id="rulesToggle" type="button" aria-expanded="false" aria-controls="rulesContent">
             <h2>Blocked sites</h2>
@@ -58,6 +69,18 @@
         <p class="hint" id="imageHint">Image files up to 4 MB.</p>
     </section>
 </main>
+
+<dialog class="confirm-dialog" id="unblockDialog">
+    <form class="confirm-panel" method="dialog">
+        <img class="confirm-image" id="unblockPreview" alt="Blocked">
+        <h2>Are you sure you want to unblock?</h2>
+        <p class="confirm-copy" id="unblockDialogText">This site will be available for 10 minutes.</p>
+        <div class="confirm-actions">
+            <button class="secondary-button" id="cancelUnblockBtn" type="button">Cancel</button>
+            <button class="confirm-button" id="confirmUnblockBtn" type="button">Unblock 10 min</button>
+        </div>
+    </form>
+</dialog>
 
 <script type="module" src="./popup.js"></script>
 
