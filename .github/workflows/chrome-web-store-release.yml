@@ -1,0 +1,89 @@
+name: Chrome Web Store Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Package and publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run tests
+        run: npm test
+
+      - name: Validate release version
+        run: npm run validate:release-version
+
+      - name: Package extension
+        run: npm run package
+
+      - name: Resolve package path
+        id: package
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          PACKAGE_PATH="dist/site-blocker-chromium-v${VERSION}.zip"
+          test -f "$PACKAGE_PATH"
+          echo "path=$PACKAGE_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chrome-extension-package
+          path: ${{ steps.package.outputs.path }}
+          if-no-files-found: error
+
+      - name: Validate Chrome Web Store secrets
+        env:
+          CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
+          CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+          CWS_SERVICE_ACCOUNT_JSON: ${{ secrets.CWS_SERVICE_ACCOUNT_JSON }}
+        run: |
+          test -n "$CWS_PUBLISHER_ID"
+          test -n "$CWS_EXTENSION_ID"
+          test -n "$CWS_SERVICE_ACCOUNT_JSON"
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.CWS_SERVICE_ACCOUNT_JSON }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/chromewebstore
+
+      - name: Upload to Chrome Web Store
+        env:
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
+          CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+          PACKAGE_PATH: ${{ steps.package.outputs.path }}
+        run: |
+          curl --fail-with-body \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            -X POST \
+            -T "${PACKAGE_PATH}" \
+            "https://chromewebstore.googleapis.com/upload/v2/publishers/${CWS_PUBLISHER_ID}/items/${CWS_EXTENSION_ID}:upload"
+
+      - name: Publish to Chrome Web Store
+        env:
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
+          CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+        run: |
+          curl --fail-with-body \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            -X POST \
+            "https://chromewebstore.googleapis.com/v2/publishers/${CWS_PUBLISHER_ID}/items/${CWS_EXTENSION_ID}:publish"

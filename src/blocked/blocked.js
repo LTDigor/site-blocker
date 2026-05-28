@@ -1,5 +1,10 @@
+import {
+    extensionStorage,
+    getExtensionUrl
+} from "../shared/extension-api.js";
+
 const blockedImage = document.getElementById("blockedImage");
-const defaultImageUrl = chrome.runtime.getURL("assets/images/image.jpg");
+const defaultImageUrl = getExtensionUrl("assets/images/image.jpg");
 const imageStorageKey = "blockedImageDataUrl";
 
 blockedImage.onerror = () => {
@@ -7,6 +12,6 @@ blockedImage.onerror = () => {
     blockedImage.src = defaultImageUrl;
 };
 
-chrome.storage.local.get([imageStorageKey], (data) => {
+extensionStorage.local.get([imageStorageKey]).then((data) => {
     blockedImage.src = data[imageStorageKey] || defaultImageUrl;
 });

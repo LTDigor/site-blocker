@@ -55,6 +55,29 @@ export function parseRules(rawRules) {
     }, []);
 }
 
+export function pruneExpiredTemporaryUnblocks(temporaryUnblocks = {}, now = Date.now()) {
+    return Object.fromEntries(
+        Object.entries(temporaryUnblocks)
+            .filter(([, expiresAt]) => Number.isFinite(expiresAt) && expiresAt > now)
+    );
+}
+
+export function filterTemporarilyUnblockedRules(
+    rawRules,
+    temporaryUnblocks = {},
+    now = Date.now()
+) {
+    const activeUnblocks = pruneExpiredTemporaryUnblocks(temporaryUnblocks, now);
+
+    return rawRules.filter((rule) => !activeUnblocks[rule]);
+}
+
+export function getNextTemporaryUnblockExpiry(temporaryUnblocks = {}, now = Date.now()) {
+    const expiries = Object.values(pruneExpiredTemporaryUnblocks(temporaryUnblocks, now));
+
+    return expiries.length > 0 ? Math.min(...expiries) : null;
+}
+
 function normalizeDomain(domain) {
     return new URL(`https://${domain}`).hostname.replace(/^www\./i, "");
 }
@@ -107,23 +130,41 @@ function matchesRule(url, rule) {
 
 export function buildDeclarativeNetRequestRules(
     rawRules,
-    redirectPath = "/src/blocked/block.html"
+    redirectPath = "/src/blocked/block.html",
+    temporaryUnblocks = {},
+    now = Date.now()
 ) {
-    return parseRules(rawRules).map((rule, index) => ({
-        id: index + 1,
-        priority: 1,
-        action: {
-            type: "redirect",
-            redirect: {
-                extensionPath: redirectPath
-            }
-        },
-        condition: {
-            ...buildCondition(rule),
-            resourceTypes: ["main_frame"],
-            isUrlFilterCaseSensitive: true
+    return filterTemporarilyUnblockedRules(rawRules, temporaryUnblocks, now).reduce((rules, rawRule) => {
+        let parsedRule;
+
+        try {
+            parsedRule = parseRule(rawRule);
+        } catch {
+            return rules;
         }
-    }));
+
+        rules.push({
+            id: rules.length + 1,
+            priority: 1,
+            action: {
+                type: "redirect",
+                redirect: {
+                    extensionPath: buildBlockedPagePath(redirectPath, rawRule)
+                }
+            },
+            condition: {
+                ...buildCondition(parsedRule),
+                resourceTypes: ["main_frame"],
+                isUrlFilterCaseSensitive: true
+            }
+        });
+
+        return rules;
+    }, []);
+}
+
+export function buildBlockedPagePath(redirectPath, blockedRule) {
+    return `${redirectPath}?blockedRule=${encodeURIComponent(blockedRule)}`;
 }
 
 function buildCondition(rule) {

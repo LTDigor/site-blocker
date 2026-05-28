@@ -19,13 +19,14 @@ URL Image Blocker блокирует сайты и отдельные URL-адр
 ### Как установить расширение в браузер
 
 1. Скачайте или склонируйте проект на компьютер.
-2. Откройте Google Chrome или Microsoft Edge.
+2. Откройте Google Chrome, Microsoft Edge или Firefox.
 3. Перейдите на страницу расширений:
    - Chrome: `chrome://extensions/`
    - Edge: `edge://extensions/`
+   - Firefox: `about:debugging#/runtime/this-firefox`
 4. Включите режим разработчика.
-5. Нажмите `Загрузить распакованное расширение`.
-6. Выберите папку проекта `site-blocker`.
+5. В Chrome/Edge нажмите `Загрузить распакованное расширение`; в Firefox нажмите `Load Temporary Add-on`.
+6. Выберите папку проекта `site-blocker` в Chrome/Edge или файл `manifest.json` внутри проекта в Firefox.
 7. Расширение появится в списке установленных расширений.
 
 ### Как пользоваться
@@ -65,13 +66,14 @@ URL Image Blocker blocks websites and specific URLs from a custom list. When a u
 ### How to install the extension in your browser
 
 1. Download or clone the project to your computer.
-2. Open Google Chrome or Microsoft Edge.
+2. Open Google Chrome, Microsoft Edge, or Firefox.
 3. Go to the extensions page:
    - Chrome: `chrome://extensions/`
    - Edge: `edge://extensions/`
+   - Firefox: `about:debugging#/runtime/this-firefox`
 4. Turn on developer mode.
-5. Click `Load unpacked`.
-6. Select the `site-blocker` project folder.
+5. In Chrome/Edge, click `Load unpacked`; in Firefox, click `Load Temporary Add-on`.
+6. Select the `site-blocker` project folder in Chrome/Edge or the `manifest.json` file inside the project in Firefox.
 7. The extension will appear in your list of installed extensions.
 
 ### How to use it
@@ -95,3 +97,16 @@ Blocked site examples:
 - `src/popup/` contains the extension popup UI.
 - `src/blocked/` contains the page shown instead of a blocked website.
 - `assets/images/` contains images and media files.
+- `assets/icons/` contains packaged extension icons.
+- `store-assets/` contains Chrome Web Store listing assets that are not included in the extension package.
+
+### Packaging and Chrome Web Store release
+
+Run tests and build the release ZIP:
+
+```sh
+npm test
+npm run package
+```
+
+Packages are created at `dist/site-blocker-chromium-v<version>.zip` and `dist/site-blocker-firefox-v<version>.zip`. See `docs/chrome-web-store.md` for the first manual Chrome Web Store setup, required GitHub secrets, and tag-based release workflow.
