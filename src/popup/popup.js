@@ -46,6 +46,7 @@ let currentSites = [];
 let currentTemporaryUnblocks = {};
 let selectedUnblockSite = null;
 let currentBlockedRule = null;
+let currentBlockedUrl = null;
 let currentTabId = null;
 
 function createMemoryStorage() {
@@ -295,7 +296,7 @@ function openTemporarilyUnblockedSite(site) {
     if (!currentTabId || !hasExtensionApi()) return Promise.resolve();
 
     return extensionTabs.update(currentTabId, {
-        url: getUrlForRule(site)
+        url: currentBlockedUrl || getUrlForRule(site)
     });
 }
 
@@ -357,11 +358,11 @@ function saveRule(rule, successMessage, duplicateMessage, callback) {
     });
 }
 
-async function openBlockPage(tabId, site) {
+async function openBlockPage(tabId, site, blockedUrl = "") {
     if (!tabId) return;
 
     const blockPagePath = site ?
-        `src/blocked/block.html?blockedRule=${encodeURIComponent(site)}` :
+        `src/blocked/block.html?blockedRule=${encodeURIComponent(site)}${blockedUrl ? `#${blockedUrl}` : ""}` :
         "src/blocked/block.html";
 
     await extensionTabs.update(tabId, {
@@ -395,7 +396,7 @@ currentSiteButton.onclick = async () => {
 
     input.value = site;
     await saveRule(site, "Current site added.", "This site is already in the list.", () => {
-        return openBlockPage(currentTab.id, site);
+        return openBlockPage(currentTab.id, site, currentTab.url);
     });
 };
 
@@ -479,6 +480,7 @@ async function initializeCurrentTabContext() {
     const currentTab = tabs?.[0];
     currentTabId = currentTab?.id || null;
     currentBlockedRule = getBlockedRuleFromBlockPageUrl(currentTab?.url);
+    currentBlockedUrl = getBlockedOriginalUrlFromBlockPageUrl(currentTab?.url);
 
     if (currentBlockedRule) {
         setRulesExpanded(true);
@@ -499,6 +501,33 @@ function getBlockedRuleFromBlockPageUrl(urlString) {
         }
 
         return url.searchParams.get("blockedRule");
+    } catch {
+        return null;
+    }
+}
+
+function getBlockedOriginalUrlFromBlockPageUrl(urlString) {
+    try {
+        const url = new URL(urlString);
+        const blockedPageUrl = new URL(getExtensionUrl("src/blocked/block.html"));
+
+        if (
+            url.protocol !== blockedPageUrl.protocol ||
+            url.hostname !== blockedPageUrl.hostname ||
+            url.pathname !== blockedPageUrl.pathname ||
+            !url.hash
+        ) {
+            return null;
+        }
+
+        const blockedUrl = url.hash.slice(1);
+        const parsedBlockedUrl = new URL(blockedUrl);
+
+        if (parsedBlockedUrl.protocol !== "http:" && parsedBlockedUrl.protocol !== "https:") {
+            return null;
+        }
+
+        return blockedUrl;
     } catch {
         return null;
     }

@@ -143,7 +143,7 @@
         if (!blockedRule) return;
 
         globalThis.location.replace(nativeApi.runtime.getURL(
-            `${BLOCKED_PAGE_PATH}?blockedRule=${encodeURIComponent(blockedRule)}`
+            `${BLOCKED_PAGE_PATH}?blockedRule=${encodeURIComponent(blockedRule)}#${globalThis.location.href}`
         ));
     }
 

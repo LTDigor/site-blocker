@@ -148,12 +148,10 @@ export function buildDeclarativeNetRequestRules(
             priority: 1,
             action: {
                 type: "redirect",
-                redirect: {
-                    extensionPath: buildBlockedPagePath(redirectPath, rawRule)
-                }
+                redirect: buildBlockedPageRedirect(redirectPath, rawRule)
             },
             condition: {
-                ...buildCondition(parsedRule),
+                regexFilter: buildFullUrlRegex(parsedRule),
                 resourceTypes: ["main_frame"],
                 isUrlFilterCaseSensitive: true
             }
@@ -163,32 +161,37 @@ export function buildDeclarativeNetRequestRules(
     }, []);
 }
 
-export function buildBlockedPagePath(redirectPath, blockedRule) {
-    return `${redirectPath}?blockedRule=${encodeURIComponent(blockedRule)}`;
+export function buildBlockedPagePath(redirectPath, blockedRule, blockedUrl = "") {
+    const hash = blockedUrl ? `#${blockedUrl}` : "";
+
+    return `${redirectPath}?blockedRule=${encodeURIComponent(blockedRule)}${hash}`;
 }
 
-function buildCondition(rule) {
-    if (rule.type === "domain") {
-        return {
-            urlFilter: `||${rule.domain}^`
-        };
-    }
+function buildBlockedPageRedirect(redirectPath, blockedRule) {
+    const path = buildBlockedPagePath(redirectPath, blockedRule, "\\0");
 
-    if (rule.type === "path") {
-        return {
-            regexFilter: buildUrlRegex(rule.domain, escapeRegExp(rule.path))
-        };
+    if (/^https?:|^chrome-extension:|^moz-extension:/i.test(redirectPath)) {
+        return { regexSubstitution: path };
     }
 
     return {
-        regexFilter: buildUrlRegex(rule.domain, rule.regex.source.replace(/^\^/, ""))
+        extensionPath: buildBlockedPagePath(redirectPath, blockedRule)
     };
 }
 
-function buildUrlRegex(domain, pathPattern) {
-    const domainPattern = escapeRegExp(domain);
+function buildFullUrlRegex(rule) {
+    const domainPattern = escapeRegExp(rule.domain);
+    const urlStart = `^https?://([^/?#]+\\.)?${domainPattern}(?::[0-9]+)?`;
 
-    return `^https?://([^/?#]+\\.)?${domainPattern}(?::[0-9]+)?/${pathPattern}`;
+    if (rule.type === "domain") {
+        return `${urlStart}([/?#].*)?$`;
+    }
+
+    if (rule.type === "path") {
+        return `${urlStart}/${escapeRegExp(rule.path)}.*$`;
+    }
+
+    return `${urlStart}/${rule.regex.source.replace(/^\^/, "")}.*$`;
 }
 
 function escapeRegExp(value) {
