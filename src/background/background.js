@@ -7,7 +7,8 @@ import {
     extensionAlarms,
     extensionDeclarativeNetRequest,
     extensionEvents,
-    extensionStorage
+    extensionStorage,
+    getExtensionUrl
 } from "../shared/extension-api.js";
 
 const BLOCKED_SITES_KEY = "blockedSites";
@@ -48,7 +49,11 @@ async function applyTemporaryUnblock(site, expiresAt) {
 
 async function updateBlockingRules(rawRules, temporaryUnblocks = {}) {
     try {
-        const rules = buildDeclarativeNetRequestRules(rawRules, BLOCKED_PAGE_PATH, temporaryUnblocks);
+        const rules = buildDeclarativeNetRequestRules(
+            rawRules,
+            getExtensionUrl(BLOCKED_PAGE_PATH.replace(/^\//, "")),
+            temporaryUnblocks
+        );
         const supportedRules = await filterSupportedRules(rules);
         const existingRules = await extensionDeclarativeNetRequest.getDynamicRules();
 

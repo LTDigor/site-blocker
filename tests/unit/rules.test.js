@@ -129,18 +129,18 @@ test("builds declarativeNetRequest redirect rules", () => {
         "example.com",
         "example.com/news",
         "example.com/^articles/[0-9]+"
-    ], "/blocked.html"), [
+    ], "chrome-extension://test/blocked.html"), [
         {
             id: 1,
             priority: 1,
             action: {
                 type: "redirect",
                 redirect: {
-                    extensionPath: "/blocked.html?blockedRule=example.com"
+                    regexSubstitution: "chrome-extension://test/blocked.html?blockedRule=example.com#\\0"
                 }
             },
             condition: {
-                urlFilter: "||example.com^",
+                regexFilter: "^https?://([^/?#]+\\.)?example\\.com(?::[0-9]+)?([/?#].*)?$",
                 resourceTypes: ["main_frame"],
                 isUrlFilterCaseSensitive: true
             }
@@ -151,11 +151,11 @@ test("builds declarativeNetRequest redirect rules", () => {
             action: {
                 type: "redirect",
                 redirect: {
-                    extensionPath: "/blocked.html?blockedRule=example.com%2Fnews"
+                    regexSubstitution: "chrome-extension://test/blocked.html?blockedRule=example.com%2Fnews#\\0"
                 }
             },
             condition: {
-                regexFilter: "^https?://([^/?#]+\\.)?example\\.com(?::[0-9]+)?/news",
+                regexFilter: "^https?://([^/?#]+\\.)?example\\.com(?::[0-9]+)?/news.*$",
                 resourceTypes: ["main_frame"],
                 isUrlFilterCaseSensitive: true
             }
@@ -166,16 +166,60 @@ test("builds declarativeNetRequest redirect rules", () => {
             action: {
                 type: "redirect",
                 redirect: {
-                    extensionPath: "/blocked.html?blockedRule=example.com%2F%5Earticles%2F%5B0-9%5D%2B"
+                    regexSubstitution: "chrome-extension://test/blocked.html?blockedRule=example.com%2F%5Earticles%2F%5B0-9%5D%2B#\\0"
                 }
             },
             condition: {
-                regexFilter: "^https?://([^/?#]+\\.)?example\\.com(?::[0-9]+)?/articles\\/[0-9]+",
+                regexFilter: "^https?://([^/?#]+\\.)?example\\.com(?::[0-9]+)?/articles\\/[0-9]+.*$",
                 resourceTypes: ["main_frame"],
                 isUrlFilterCaseSensitive: true
             }
         }
     ]);
+});
+
+test("generated declarativeNetRequest regexes preserve rule matching semantics", () => {
+    const rawRules = [
+        "example.com",
+        "example.com/news",
+        "example.com/^articles/[0-9]+"
+    ];
+    const generatedRules = buildDeclarativeNetRequestRules(rawRules, "chrome-extension://test/blocked.html");
+
+    const cases = [
+        ["example.com", "https://example.com", true],
+        ["example.com", "https://example.com?x=1", true],
+        ["example.com", "https://example.com/#section", true],
+        ["example.com", "https://www.example.com/news?id=1", true],
+        ["example.com", "https://notexample.com/", false],
+        ["example.com/news", "https://example.com/news/article?id=1", true],
+        ["example.com/news", "https://example.com/blog", false],
+        ["example.com/^articles/[0-9]+", "https://example.com/articles/42#comments", true],
+        ["example.com/^articles/[0-9]+", "https://example.com/articles/latest", false]
+    ];
+
+    for (const [rawRule, url, expected] of cases) {
+        const generatedRule = generatedRules[rawRules.indexOf(rawRule)];
+        const parsedRule = parseRule(rawRule);
+
+        assert.equal(new RegExp(generatedRule.condition.regexFilter).test(url), expected);
+        assert.equal(matchesUrl(url, [parsedRule]), expected);
+    }
+});
+
+test("generated declarativeNetRequest substitution carries the full original URL", () => {
+    const [rule] = buildDeclarativeNetRequestRules(
+        ["example.com/news"],
+        "chrome-extension://test/blocked.html"
+    );
+    const blockedUrl = "https://www.example.com/news/article?id=1#comments";
+    const match = blockedUrl.match(new RegExp(rule.condition.regexFilter));
+    const redirectedUrl = rule.action.redirect.regexSubstitution.replace("\\0", match[0]);
+
+    assert.equal(
+        redirectedUrl,
+        "chrome-extension://test/blocked.html?blockedRule=example.com%2Fnews#https://www.example.com/news/article?id=1#comments"
+    );
 });
 
 test("filters active temporary unblocks before building rules", () => {
@@ -195,11 +239,11 @@ test("filters active temporary unblocks before building rules", () => {
     assert.deepEqual(
         buildDeclarativeNetRequestRules(
             ["example.com", "openai.com"],
-            "/blocked.html",
+            "chrome-extension://test/blocked.html",
             { "example.com": 2000 },
             1000
-        ).map((rule) => rule.condition.urlFilter),
-        ["||openai.com^"]
+        ).map((rule) => rule.condition.regexFilter),
+        ["^https?://([^/?#]+\\.)?openai\\.com(?::[0-9]+)?([/?#].*)?$"]
     );
 });
 

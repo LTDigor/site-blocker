@@ -19,7 +19,7 @@ test("adding the current site saves it and opens the block page immediately", as
         {
             tabId: 42,
             options: {
-                url: "chrome-extension://test/src/blocked/block.html?blockedRule=example.com"
+                url: "chrome-extension://test/src/blocked/block.html?blockedRule=example.com#https://www.example.com/news"
             }
         }
     ]);
@@ -47,7 +47,7 @@ test("adding an already blocked current site still opens the block page", async 
         {
             tabId: 42,
             options: {
-                url: "chrome-extension://test/src/blocked/block.html?blockedRule=example.com"
+                url: "chrome-extension://test/src/blocked/block.html?blockedRule=example.com#https://example.com/news"
             }
         }
     ]);
@@ -87,7 +87,7 @@ test("temporarily unblocking a blocked site confirms with block image preview", 
     const { elements, chrome, state, cleanup } = await setupPopupTest({
         activeTab: {
             id: 42,
-            url: "chrome-extension://test/src/blocked/block.html?blockedRule=example.com"
+            url: "chrome-extension://test/src/blocked/block.html?blockedRule=example.com#https://example.com/watch?v=abc123"
         },
         initialState: {
             blockedSites: ["example.com", "openai.com"],
@@ -119,7 +119,123 @@ test("temporarily unblocking a blocked site confirms with block image preview", 
         {
             tabId: 42,
             options: {
+                url: "https://example.com/watch?v=abc123"
+            }
+        }
+    ]);
+});
+
+test("temporarily unblocking falls back to the rule URL without original block page context", async (t) => {
+    const now = 1_700_000_000_000;
+    const { elements, chrome, cleanup } = await setupPopupTest({
+        activeTab: {
+            id: 42,
+            url: "chrome-extension://test/src/blocked/block.html?blockedRule=example.com"
+        },
+        initialState: {
+            blockedSites: ["example.com"]
+        },
+        now
+    });
+    t.after(cleanup);
+
+    elements.currentUnblockBtn.onclick();
+    await Promise.resolve();
+    await Promise.resolve();
+    await elements.confirmUnblockBtn.onclick();
+
+    assert.deepEqual(chrome.tabs.updatedTabs, [
+        {
+            tabId: 42,
+            options: {
                 url: "https://example.com/"
+            }
+        }
+    ]);
+});
+
+test("temporarily unblocking ignores unsafe original block page context", async (t) => {
+    const now = 1_700_000_000_000;
+    const { elements, chrome, cleanup } = await setupPopupTest({
+        activeTab: {
+            id: 42,
+            url: "chrome-extension://test/src/blocked/block.html?blockedRule=example.com#javascript:alert(1)"
+        },
+        initialState: {
+            blockedSites: ["example.com"]
+        },
+        now
+    });
+    t.after(cleanup);
+
+    elements.currentUnblockBtn.onclick();
+    await Promise.resolve();
+    await Promise.resolve();
+    await elements.confirmUnblockBtn.onclick();
+
+    assert.deepEqual(chrome.tabs.updatedTabs, [
+        {
+            tabId: 42,
+            options: {
+                url: "https://example.com/"
+            }
+        }
+    ]);
+});
+
+test("temporarily unblocking preserves original URL hashes", async (t) => {
+    const now = 1_700_000_000_000;
+    const { elements, chrome, cleanup } = await setupPopupTest({
+        activeTab: {
+            id: 42,
+            url: "chrome-extension://test/src/blocked/block.html?blockedRule=example.com#https://example.com/watch?v=1#comments"
+        },
+        initialState: {
+            blockedSites: ["example.com"]
+        },
+        now
+    });
+    t.after(cleanup);
+
+    elements.currentUnblockBtn.onclick();
+    await Promise.resolve();
+    await Promise.resolve();
+    await elements.confirmUnblockBtn.onclick();
+
+    assert.deepEqual(chrome.tabs.updatedTabs, [
+        {
+            tabId: 42,
+            options: {
+                url: "https://example.com/watch?v=1#comments"
+            }
+        }
+    ]);
+});
+
+test("temporarily unblocking path-specific rules restores the exact original URL", async (t) => {
+    const now = 1_700_000_000_000;
+    const { elements, chrome, cleanup } = await setupPopupTest({
+        activeTab: {
+            id: 42,
+            url: "chrome-extension://test/src/blocked/block.html?blockedRule=example.com%2Fnews#https://example.com/news/article?id=1"
+        },
+        initialState: {
+            blockedSites: ["example.com/news"]
+        },
+        now
+    });
+    t.after(cleanup);
+
+    elements.currentUnblockBtn.onclick();
+    await Promise.resolve();
+    await Promise.resolve();
+    await elements.confirmUnblockBtn.onclick();
+
+    assert.deepEqual(chrome.tabs.updatedTabs, [
+        {
+            tabId: 42,
+            options: {
+                url: "https://example.com/news/article?id=1"
             }
         }
     ]);

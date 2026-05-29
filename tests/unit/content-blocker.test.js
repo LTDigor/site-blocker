@@ -16,7 +16,9 @@ test("content fallback redirects blocked YouTube pages", async (t) => {
     await import(`../../src/content/blocker.js?test=${Date.now()}-${Math.random()}`);
     await Promise.resolve();
 
-    assert.deepEqual(redirects, ["chrome-extension://test/src/blocked/block.html?blockedRule=youtube.com"]);
+    assert.deepEqual(redirects, [
+        "chrome-extension://test/src/blocked/block.html?blockedRule=youtube.com#https://www.youtube.com/watch?v=abc123"
+    ]);
 });
 
 test("content fallback ignores unblocked pages", async (t) => {
@@ -73,7 +75,9 @@ test("content fallback ignores expired temporary unblocks", async (t) => {
     await import(`../../src/content/blocker.js?test=${Date.now()}-${Math.random()}`);
     await Promise.resolve();
 
-    assert.deepEqual(redirects, ["chrome-extension://test/src/blocked/block.html?blockedRule=youtube.com"]);
+    assert.deepEqual(redirects, [
+        "chrome-extension://test/src/blocked/block.html?blockedRule=youtube.com#https://www.youtube.com/watch?v=abc123"
+    ]);
 });
 
 test("content fallback redirects when a temporary unblock is removed", async (t) => {
@@ -99,8 +103,8 @@ test("content fallback redirects when a temporary unblock is removed", async (t)
     await Promise.resolve();
 
     assert.deepEqual(redirects, [
-        "chrome-extension://test/src/blocked/block.html?blockedRule=youtube.com",
-        "chrome-extension://test/src/blocked/block.html?blockedRule=youtube.com"
+        "chrome-extension://test/src/blocked/block.html?blockedRule=youtube.com#https://www.youtube.com/watch?v=abc123",
+        "chrome-extension://test/src/blocked/block.html?blockedRule=youtube.com#https://www.youtube.com/watch?v=abc123"
     ]);
 });
 
