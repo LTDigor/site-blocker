@@ -38,6 +38,22 @@ test("content fallback ignores unblocked pages", async (t) => {
     assert.deepEqual(redirects, []);
 });
 
+test("content fallback ignores YouTube Chrome auth pages", async (t) => {
+    const redirects = [];
+
+    await setupContentScriptTest({
+        state: {
+            blockedSites: ["youtube.com"]
+        },
+        url: "https://accounts.youtube.com/accounts/SetSID",
+        redirects
+    });
+
+    await import(`../../src/content/blocker.js?test=${Date.now()}-${Math.random()}`);
+
+    assert.deepEqual(redirects, []);
+});
+
 test("content fallback respects active temporary unblocks", async (t) => {
     const redirects = [];
     const { cleanup } = await setupContentScriptTest({

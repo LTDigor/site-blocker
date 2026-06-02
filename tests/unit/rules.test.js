@@ -81,7 +81,14 @@ test("matches YouTube domain rules on common entry URLs", () => {
     assert.equal(matchesUrl("https://www.youtube.com/", rules), true);
     assert.equal(matchesUrl("https://m.youtube.com/shorts/abc123", rules), true);
     assert.equal(matchesUrl("https://music.youtube.com/watch?v=abc123", rules), true);
+    assert.equal(matchesUrl("https://accounts.youtube.com/accounts/SetSID", rules), false);
     assert.equal(matchesUrl("https://youtube-nocookie.com/embed/abc123", rules), false);
+});
+
+test("allows explicitly blocking YouTube auth hosts", () => {
+    const rules = [parseRule("accounts.youtube.com")];
+
+    assert.equal(matchesUrl("https://accounts.youtube.com/accounts/SetSID", rules), true);
 });
 
 test("matches path prefixes", () => {
@@ -176,6 +183,15 @@ test("builds declarativeNetRequest redirect rules", () => {
             }
         }
     ]);
+});
+
+test("generated YouTube rules exclude Chrome auth request domains", () => {
+    const [rule] = buildDeclarativeNetRequestRules(
+        ["youtube.com"],
+        "chrome-extension://test/blocked.html"
+    );
+
+    assert.deepEqual(rule.condition.excludedRequestDomains, ["accounts.youtube.com"]);
 });
 
 test("generated declarativeNetRequest regexes preserve rule matching semantics", () => {
