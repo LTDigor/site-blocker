@@ -105,6 +105,10 @@ export function matchesUrl(urlString, rules) {
 }
 
 function matchesRule(url, rule) {
+    if (isBypassedImplicitSubdomainUrl(url, rule)) {
+        return false;
+    }
+
     const domainMatch =
         url.hostname === rule.domain ||
         url.hostname.endsWith("." + rule.domain);
@@ -153,7 +157,8 @@ export function buildDeclarativeNetRequestRules(
             condition: {
                 regexFilter: buildFullUrlRegex(parsedRule),
                 resourceTypes: ["main_frame"],
-                isUrlFilterCaseSensitive: true
+                isUrlFilterCaseSensitive: true,
+                ...buildRuleConditionExclusions(parsedRule)
             }
         });
 
@@ -192,6 +197,20 @@ function buildFullUrlRegex(rule) {
     }
 
     return `${urlStart}/${rule.regex.source.replace(/^\^/, "")}.*$`;
+}
+
+function buildRuleConditionExclusions(rule) {
+    if (rule.domain === "youtube.com") {
+        return {
+            excludedRequestDomains: ["accounts.youtube.com"]
+        };
+    }
+
+    return {};
+}
+
+function isBypassedImplicitSubdomainUrl(url, rule) {
+    return rule.domain === "youtube.com" && url.hostname === "accounts.youtube.com";
 }
 
 function escapeRegExp(value) {
