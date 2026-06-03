@@ -18,3 +18,12 @@ test("manifest exposes the blocked page and its default image to redirected page
     assert.ok(resources.includes("src/blocked/block.html"));
     assert.ok(resources.includes("assets/images/image.jpg"));
 });
+
+test("manifest allows stored images on extension pages", async () => {
+    const manifest = JSON.parse(await readFile(join(root, "manifest.json"), "utf8"));
+    const extensionPagesPolicy = manifest.content_security_policy.extension_pages;
+
+    assert.match(extensionPagesPolicy, /img-src[^;]*'self'/);
+    assert.match(extensionPagesPolicy, /img-src[^;]*data:/);
+    assert.match(extensionPagesPolicy, /img-src[^;]*blob:/);
+});
