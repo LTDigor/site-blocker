@@ -36,6 +36,10 @@ URL Image Blocker блокирует сайты и отдельные URL-адр
 3. Нажмите `Add`.
 4. Чтобы быстро заблокировать текущий сайт, нажмите `Add current site`.
 5. В блоке `Block image` нажмите `Choose local image`, чтобы заменить картинку на странице блокировки. Кнопка `Reset` возвращает стандартную картинку.
+6. Если вы открыли заблокированный сайт, в popup появится кнопка `Unblock 10 min`. Перед временной разблокировкой нужно решить математический пример.
+7. Чтобы удалить сайт из списка блокировки, нажмите `×` рядом с правилом и решите математический пример. Без правильного ответа сайт не удалится.
+
+Математические примеры специально сделаны не одношаговыми: они могут включать умножение, деление, скобки, сложение и вычитание.
 
 Примеры записей:
 
@@ -83,6 +87,10 @@ URL Image Blocker blocks websites and specific URLs from a custom list. When a u
 3. Click `Add`.
 4. To block the site you're on right now, click `Add current site`.
 5. In `Block image`, click `Choose local image` to replace the image shown on the block page. `Reset` restores the default image.
+6. When you are on a blocked site, the popup shows `Unblock 10 min`. You must solve a math challenge before the temporary unblock is applied.
+7. To remove a site from the block list, click `×` next to the rule and solve the math challenge. The site is not removed until the answer is correct.
+
+Math challenges are intentionally multi-step: they can include multiplication, division, parentheses, addition, and subtraction.
 
 Blocked site examples:
 
