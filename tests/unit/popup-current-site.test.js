@@ -354,7 +354,7 @@ test("temporary unblock requires solving the math challenge", async (t) => {
     assert.deepEqual(state.temporaryUnblocks, undefined);
     assert.deepEqual(chrome.tabs.updatedTabs, []);
     assert.equal(elements.unblockDialog.open, true);
-    assert.equal(elements.unblockChallengeHint.textContent, "Solve the math example to unblock.");
+    assert.equal(elements.unblockChallengeHint.textContent, "Solve the math example to continue.");
 
     answerCurrentChallenge(elements);
     await elements.confirmUnblockBtn.onclick();
@@ -370,6 +370,47 @@ test("temporary unblock requires solving the math challenge", async (t) => {
             }
         }
     ]);
+});
+
+test("removing a blocked site requires solving the math challenge", async (t) => {
+    const { elements, state, cleanup } = await setupPopupTest({
+        activeTab: {
+            id: 42,
+            url: "https://example.com/"
+        },
+        initialState: {
+            blockedSites: ["example.com", "openai.com"],
+            temporaryUnblocks: {
+                "example.com": Date.now() + 10 * 60 * 1000
+            }
+        }
+    });
+    t.after(cleanup);
+
+    const removeButton = elements.list.children[0].children[1];
+    removeButton.onclick();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert.equal(elements.unblockDialog.open, true);
+    assert.equal(elements.challengeDialogTitle.textContent, "Remove blocked site?");
+    assert.equal(elements.unblockDialogText.textContent, "example.com will be removed from the block list.");
+    assert.equal(elements.confirmUnblockBtn.textContent, "Remove");
+
+    elements.unblockChallengeAnswer.value = String(getCurrentChallengeAnswer(elements) + 1);
+    await elements.confirmUnblockBtn.onclick();
+
+    assert.deepEqual(state.blockedSites, ["example.com", "openai.com"]);
+    assert.equal(elements.unblockDialog.open, true);
+    assert.equal(elements.unblockChallengeHint.textContent, "Solve the math example to continue.");
+
+    answerCurrentChallenge(elements);
+    await elements.confirmUnblockBtn.onclick();
+
+    assert.deepEqual(state.blockedSites, ["openai.com"]);
+    assert.deepEqual(state.temporaryUnblocks, {});
+    assert.equal(elements.unblockDialog.open, false);
+    assert.equal(elements.formHint.textContent, "Blocked site removed.");
 });
 
 async function setupPopupTest({ activeTab, initialState = {}, now }) {
@@ -431,6 +472,7 @@ function createPopupElements() {
         "currentUnblockBtn",
         "unblockDialog",
         "unblockPreview",
+        "challengeDialogTitle",
         "unblockDialogText",
         "unblockChallengeQuestion",
         "unblockChallengeAnswer",
@@ -447,13 +489,31 @@ function answerCurrentChallenge(elements) {
 }
 
 function getCurrentChallengeAnswer(elements) {
-    const match = elements.unblockChallengeQuestion.textContent.match(/Solve: (\d+) ([+-]) (\d+) =/);
-    assert.ok(match, `Unexpected challenge: ${elements.unblockChallengeQuestion.textContent}`);
+    const challenge = elements.unblockChallengeQuestion.textContent
+        .replace(/^Solve: /, "")
+        .replace(/ =$/, "");
 
-    const left = Number(match[1]);
-    const right = Number(match[3]);
+    let match = challenge.match(/^\((\d+) \+ (\d+)\) x (\d+) - (\d+)$/);
+    if (match) {
+        return (Number(match[1]) + Number(match[2])) * Number(match[3]) - Number(match[4]);
+    }
 
-    return match[2] === "+" ? left + right : left - right;
+    match = challenge.match(/^(\d+) x (\d+) \+ (\d+) - (\d+)$/);
+    if (match) {
+        return Number(match[1]) * Number(match[2]) + Number(match[3]) - Number(match[4]);
+    }
+
+    match = challenge.match(/^(\d+) \/ (\d+) \+ (\d+) x (\d+)$/);
+    if (match) {
+        return Number(match[1]) / Number(match[2]) + Number(match[3]) * Number(match[4]);
+    }
+
+    match = challenge.match(/^(\d+) - \((\d+) \+ (\d+)\) x (\d+)$/);
+    if (match) {
+        return Number(match[1]) - (Number(match[2]) + Number(match[3])) * Number(match[4]);
+    }
+
+    assert.fail(`Unexpected challenge: ${elements.unblockChallengeQuestion.textContent}`);
 }
 
 function createDocumentMock(elements) {
