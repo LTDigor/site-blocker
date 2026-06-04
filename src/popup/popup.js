@@ -29,6 +29,7 @@ const currentBlockStatus = documentRef.getElementById("currentBlockStatus");
 const currentUnblockButton = documentRef.getElementById("currentUnblockBtn");
 const unblockDialog = documentRef.getElementById("unblockDialog");
 const unblockPreview = documentRef.getElementById("unblockPreview");
+const challengeDialogTitle = documentRef.getElementById("challengeDialogTitle");
 const unblockDialogText = documentRef.getElementById("unblockDialogText");
 const unblockChallengeQuestion = documentRef.getElementById("unblockChallengeQuestion");
 const unblockChallengeAnswer = documentRef.getElementById("unblockChallengeAnswer");
@@ -48,6 +49,8 @@ let areRulesExpanded = false;
 let currentSites = [];
 let currentTemporaryUnblocks = {};
 let selectedUnblockSite = null;
+let selectedRemoveSite = null;
+let challengeDialogAction = null;
 let currentUnblockChallenge = null;
 let currentBlockedRule = null;
 let currentBlockedUrl = null;
@@ -112,7 +115,7 @@ function render(sites, temporaryUnblocks = currentTemporaryUnblocks) {
         remove.title = "Remove blocked site";
 
         remove.onclick = () => {
-            removeBlockedSite(sites, site);
+            openRemoveDialog(site);
         };
 
         ruleDetails.appendChild(ruleText);
@@ -158,8 +161,8 @@ function save(sites, callback) {
     });
 }
 
-function removeBlockedSite(sites, site) {
-    const nextSites = [...sites];
+function removeBlockedSite(site) {
+    const nextSites = [...currentSites];
     const nextTemporaryUnblocks = { ...currentTemporaryUnblocks };
     const index = nextSites.indexOf(site);
 
@@ -229,11 +232,12 @@ function getResolvedBlockImage() {
 
 function openUnblockDialog(site) {
     selectedUnblockSite = site;
-    currentUnblockChallenge = createMathChallenge();
+    selectedRemoveSite = null;
+    challengeDialogAction = "unblock";
+    prepareMathChallenge();
+    challengeDialogTitle.textContent = "Are you sure you want to unblock?";
     unblockDialogText.textContent = `${site} will be available for 10 minutes.`;
-    unblockChallengeQuestion.textContent = `Solve: ${currentUnblockChallenge.question} =`;
-    unblockChallengeAnswer.value = "";
-    unblockChallengeHint.textContent = "";
+    confirmUnblockButton.textContent = "Unblock 10 min";
     unblockPreview.src = DEFAULT_BLOCK_IMAGE_URL;
 
     getResolvedBlockImage().then((imageUrl) => {
@@ -248,8 +252,39 @@ function openUnblockDialog(site) {
     unblockDialog.open = true;
 }
 
+function openRemoveDialog(site) {
+    selectedUnblockSite = null;
+    selectedRemoveSite = site;
+    challengeDialogAction = "remove";
+    prepareMathChallenge();
+    challengeDialogTitle.textContent = "Remove blocked site?";
+    unblockDialogText.textContent = `${site} will be removed from the block list.`;
+    confirmUnblockButton.textContent = "Remove";
+    unblockPreview.src = DEFAULT_BLOCK_IMAGE_URL;
+
+    getResolvedBlockImage().then((imageUrl) => {
+        unblockPreview.src = imageUrl;
+    });
+
+    if (typeof unblockDialog.showModal === "function") {
+        unblockDialog.showModal();
+        return;
+    }
+
+    unblockDialog.open = true;
+}
+
+function prepareMathChallenge() {
+    currentUnblockChallenge = createMathChallenge();
+    unblockChallengeQuestion.textContent = `Solve: ${currentUnblockChallenge.question} =`;
+    unblockChallengeAnswer.value = "";
+    unblockChallengeHint.textContent = "";
+}
+
 function closeUnblockDialog() {
     selectedUnblockSite = null;
+    selectedRemoveSite = null;
+    challengeDialogAction = null;
     currentUnblockChallenge = null;
     unblockChallengeAnswer.value = "";
     unblockChallengeHint.textContent = "";
@@ -263,12 +298,20 @@ function closeUnblockDialog() {
 }
 
 function confirmTemporaryUnblock() {
-    if (!selectedUnblockSite) return Promise.resolve();
+    if (!challengeDialogAction) return Promise.resolve();
     if (!isCorrectMathChallengeAnswer()) {
-        unblockChallengeHint.textContent = "Solve the math example to unblock.";
+        unblockChallengeHint.textContent = "Solve the math example to continue.";
         unblockChallengeAnswer.focus();
         return Promise.resolve();
     }
+
+    if (challengeDialogAction === "remove") {
+        return removeBlockedSite(selectedRemoveSite).then(() => {
+            closeUnblockDialog();
+        });
+    }
+
+    if (!selectedUnblockSite) return Promise.resolve();
 
     const site = selectedUnblockSite;
     const expiresAt = Date.now() + TEMPORARY_UNBLOCK_DURATION_MS;
@@ -291,38 +334,54 @@ function confirmTemporaryUnblock() {
 }
 
 function createMathChallenge() {
-    const challengeType = getRandomInteger(1, 3);
+    const challengeType = getRandomInteger(1, 4);
 
     if (challengeType === 1) {
-        const factor = getRandomInteger(6, 12);
-        const multiplier = getRandomInteger(4, 9);
-        const offset = getRandomInteger(13, 49);
+        const left = getRandomInteger(31, 79);
+        const right = getRandomInteger(18, 46);
+        const multiplier = getRandomInteger(4, 8);
+        const offset = getRandomInteger(17, 68);
 
         return {
-            question: `${factor} x ${multiplier} + ${offset}`,
-            answer: factor * multiplier + offset
+            question: `(${left} + ${right}) x ${multiplier} - ${offset}`,
+            answer: (left + right) * multiplier - offset
         };
     }
 
     if (challengeType === 2) {
-        const factor = getRandomInteger(5, 11);
-        const multiplier = getRandomInteger(4, 9);
-        const product = factor * multiplier;
-        const minuend = product + getRandomInteger(25, 80);
+        const factor = getRandomInteger(12, 19);
+        const multiplier = getRandomInteger(11, 17);
+        const addend = getRandomInteger(64, 139);
+        const subtrahend = getRandomInteger(23, 78);
 
         return {
-            question: `${minuend} - ${factor} x ${multiplier}`,
-            answer: minuend - product
+            question: `${factor} x ${multiplier} + ${addend} - ${subtrahend}`,
+            answer: factor * multiplier + addend - subtrahend
         };
     }
 
-    const left = getRandomInteger(8, 24);
-    const right = getRandomInteger(7, 19);
-    const multiplier = getRandomInteger(2, 5);
+    if (challengeType === 3) {
+        const divisor = getRandomInteger(6, 12);
+        const quotient = getRandomInteger(23, 48);
+        const factor = getRandomInteger(13, 19);
+        const multiplier = getRandomInteger(5, 9);
+        const dividend = divisor * quotient;
+
+        return {
+            question: `${dividend} / ${divisor} + ${factor} x ${multiplier}`,
+            answer: quotient + factor * multiplier
+        };
+    }
+
+    const left = getRandomInteger(22, 57);
+    const right = getRandomInteger(16, 44);
+    const multiplier = getRandomInteger(3, 7);
+    const product = (left + right) * multiplier;
+    const minuend = product + getRandomInteger(82, 180);
 
     return {
-        question: `(${left} + ${right}) x ${multiplier}`,
-        answer: (left + right) * multiplier
+        question: `${minuend} - (${left} + ${right}) x ${multiplier}`,
+        answer: minuend - product
     };
 }
 
