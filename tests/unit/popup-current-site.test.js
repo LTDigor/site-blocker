@@ -105,6 +105,7 @@ test("temporarily unblocking a blocked site confirms with block image preview", 
     assert.equal(elements.unblockDialog.open, true);
     assert.equal(elements.unblockPreview.src, "data:image/png;base64,custom");
     assert.equal(elements.unblockDialogText.textContent, "example.com will be available for 10 minutes.");
+    answerCurrentChallenge(elements);
 
     await elements.confirmUnblockBtn.onclick();
 
@@ -142,6 +143,7 @@ test("temporarily unblocking falls back to the rule URL without original block p
     elements.currentUnblockBtn.onclick();
     await Promise.resolve();
     await Promise.resolve();
+    answerCurrentChallenge(elements);
     await elements.confirmUnblockBtn.onclick();
 
     assert.deepEqual(chrome.tabs.updatedTabs, [
@@ -171,6 +173,7 @@ test("temporarily unblocking ignores unsafe original block page context", async 
     elements.currentUnblockBtn.onclick();
     await Promise.resolve();
     await Promise.resolve();
+    answerCurrentChallenge(elements);
     await elements.confirmUnblockBtn.onclick();
 
     assert.deepEqual(chrome.tabs.updatedTabs, [
@@ -200,6 +203,7 @@ test("temporarily unblocking preserves original URL hashes", async (t) => {
     elements.currentUnblockBtn.onclick();
     await Promise.resolve();
     await Promise.resolve();
+    answerCurrentChallenge(elements);
     await elements.confirmUnblockBtn.onclick();
 
     assert.deepEqual(chrome.tabs.updatedTabs, [
@@ -229,6 +233,7 @@ test("temporarily unblocking path-specific rules restores the exact original URL
     elements.currentUnblockBtn.onclick();
     await Promise.resolve();
     await Promise.resolve();
+    answerCurrentChallenge(elements);
     await elements.confirmUnblockBtn.onclick();
 
     assert.deepEqual(chrome.tabs.updatedTabs, [
@@ -325,6 +330,48 @@ test("adding an already blocked site again clears its temporary unblock", async 
     assert.equal(elements.formHint.textContent, "Blocked site restored.");
 });
 
+test("temporary unblock requires solving the math challenge", async (t) => {
+    const now = 1_700_000_000_000;
+    const { elements, chrome, state, cleanup } = await setupPopupTest({
+        activeTab: {
+            id: 42,
+            url: "chrome-extension://test/src/blocked/block.html?blockedRule=example.com#https://example.com/"
+        },
+        initialState: {
+            blockedSites: ["example.com"]
+        },
+        now
+    });
+    t.after(cleanup);
+
+    elements.currentUnblockBtn.onclick();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    elements.unblockChallengeAnswer.value = String(getCurrentChallengeAnswer(elements) + 1);
+    await elements.confirmUnblockBtn.onclick();
+
+    assert.deepEqual(state.temporaryUnblocks, undefined);
+    assert.deepEqual(chrome.tabs.updatedTabs, []);
+    assert.equal(elements.unblockDialog.open, true);
+    assert.equal(elements.unblockChallengeHint.textContent, "Solve the math example to unblock.");
+
+    answerCurrentChallenge(elements);
+    await elements.confirmUnblockBtn.onclick();
+
+    assert.deepEqual(state.temporaryUnblocks, {
+        "example.com": now + 10 * 60 * 1000
+    });
+    assert.deepEqual(chrome.tabs.updatedTabs, [
+        {
+            tabId: 42,
+            options: {
+                url: "https://example.com/"
+            }
+        }
+    ]);
+});
+
 async function setupPopupTest({ activeTab, initialState = {}, now }) {
     const previousChrome = globalThis.chrome;
     const previousDocument = globalThis.document;
@@ -385,11 +432,28 @@ function createPopupElements() {
         "unblockDialog",
         "unblockPreview",
         "unblockDialogText",
+        "unblockChallengeQuestion",
+        "unblockChallengeAnswer",
+        "unblockChallengeHint",
         "cancelUnblockBtn",
         "confirmUnblockBtn"
     ];
 
     return Object.fromEntries(ids.map((id) => [id, createElementMock()]));
+}
+
+function answerCurrentChallenge(elements) {
+    elements.unblockChallengeAnswer.value = String(getCurrentChallengeAnswer(elements));
+}
+
+function getCurrentChallengeAnswer(elements) {
+    const match = elements.unblockChallengeQuestion.textContent.match(/Solve: (\d+) ([+-]) (\d+) =/);
+    assert.ok(match, `Unexpected challenge: ${elements.unblockChallengeQuestion.textContent}`);
+
+    const left = Number(match[1]);
+    const right = Number(match[3]);
+
+    return match[2] === "+" ? left + right : left - right;
 }
 
 function createDocumentMock(elements) {

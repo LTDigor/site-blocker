@@ -30,6 +30,9 @@ const currentUnblockButton = documentRef.getElementById("currentUnblockBtn");
 const unblockDialog = documentRef.getElementById("unblockDialog");
 const unblockPreview = documentRef.getElementById("unblockPreview");
 const unblockDialogText = documentRef.getElementById("unblockDialogText");
+const unblockChallengeQuestion = documentRef.getElementById("unblockChallengeQuestion");
+const unblockChallengeAnswer = documentRef.getElementById("unblockChallengeAnswer");
+const unblockChallengeHint = documentRef.getElementById("unblockChallengeHint");
 const cancelUnblockButton = documentRef.getElementById("cancelUnblockBtn");
 const confirmUnblockButton = documentRef.getElementById("confirmUnblockBtn");
 
@@ -45,6 +48,7 @@ let areRulesExpanded = false;
 let currentSites = [];
 let currentTemporaryUnblocks = {};
 let selectedUnblockSite = null;
+let currentUnblockChallenge = null;
 let currentBlockedRule = null;
 let currentBlockedUrl = null;
 let currentTabId = null;
@@ -225,7 +229,11 @@ function getResolvedBlockImage() {
 
 function openUnblockDialog(site) {
     selectedUnblockSite = site;
+    currentUnblockChallenge = createMathChallenge();
     unblockDialogText.textContent = `${site} will be available for 10 minutes.`;
+    unblockChallengeQuestion.textContent = `Solve: ${currentUnblockChallenge.question} =`;
+    unblockChallengeAnswer.value = "";
+    unblockChallengeHint.textContent = "";
     unblockPreview.src = DEFAULT_BLOCK_IMAGE_URL;
 
     getResolvedBlockImage().then((imageUrl) => {
@@ -242,6 +250,9 @@ function openUnblockDialog(site) {
 
 function closeUnblockDialog() {
     selectedUnblockSite = null;
+    currentUnblockChallenge = null;
+    unblockChallengeAnswer.value = "";
+    unblockChallengeHint.textContent = "";
 
     if (typeof unblockDialog.close === "function") {
         unblockDialog.close();
@@ -253,6 +264,11 @@ function closeUnblockDialog() {
 
 function confirmTemporaryUnblock() {
     if (!selectedUnblockSite) return Promise.resolve();
+    if (!isCorrectMathChallengeAnswer()) {
+        unblockChallengeHint.textContent = "Solve the math example to unblock.";
+        unblockChallengeAnswer.focus();
+        return Promise.resolve();
+    }
 
     const site = selectedUnblockSite;
     const expiresAt = Date.now() + TEMPORARY_UNBLOCK_DURATION_MS;
@@ -271,7 +287,40 @@ function confirmTemporaryUnblock() {
                 closeUnblockDialog();
                 return openTemporarilyUnblockedSite(site);
             });
-    });
+        });
+}
+
+function createMathChallenge() {
+    const left = getRandomInteger(3, 18);
+    const right = getRandomInteger(2, 12);
+    const operation = Math.random() < 0.5 ? "+" : "-";
+
+    if (operation === "+") {
+        return {
+            question: `${left} + ${right}`,
+            answer: left + right
+        };
+    }
+
+    const minuend = Math.max(left, right);
+    const subtrahend = Math.min(left, right);
+
+    return {
+        question: `${minuend} - ${subtrahend}`,
+        answer: minuend - subtrahend
+    };
+}
+
+function getRandomInteger(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function isCorrectMathChallengeAnswer() {
+    if (!currentUnblockChallenge) return false;
+    const rawAnswer = unblockChallengeAnswer.value.trim();
+    if (!rawAnswer) return false;
+
+    return Number(rawAnswer) === currentUnblockChallenge.answer;
 }
 
 function saveTemporaryUnblock(site, expiresAt, nextTemporaryUnblocks) {
