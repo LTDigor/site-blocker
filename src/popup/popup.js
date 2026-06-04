@@ -291,23 +291,38 @@ function confirmTemporaryUnblock() {
 }
 
 function createMathChallenge() {
-    const left = getRandomInteger(3, 18);
-    const right = getRandomInteger(2, 12);
-    const operation = Math.random() < 0.5 ? "+" : "-";
+    const challengeType = getRandomInteger(1, 3);
 
-    if (operation === "+") {
+    if (challengeType === 1) {
+        const factor = getRandomInteger(6, 12);
+        const multiplier = getRandomInteger(4, 9);
+        const offset = getRandomInteger(13, 49);
+
         return {
-            question: `${left} + ${right}`,
-            answer: left + right
+            question: `${factor} x ${multiplier} + ${offset}`,
+            answer: factor * multiplier + offset
         };
     }
 
-    const minuend = Math.max(left, right);
-    const subtrahend = Math.min(left, right);
+    if (challengeType === 2) {
+        const factor = getRandomInteger(5, 11);
+        const multiplier = getRandomInteger(4, 9);
+        const product = factor * multiplier;
+        const minuend = product + getRandomInteger(25, 80);
+
+        return {
+            question: `${minuend} - ${factor} x ${multiplier}`,
+            answer: minuend - product
+        };
+    }
+
+    const left = getRandomInteger(8, 24);
+    const right = getRandomInteger(7, 19);
+    const multiplier = getRandomInteger(2, 5);
 
     return {
-        question: `${minuend} - ${subtrahend}`,
-        answer: minuend - subtrahend
+        question: `(${left} + ${right}) x ${multiplier}`,
+        answer: (left + right) * multiplier
     };
 }
 

@@ -447,13 +447,26 @@ function answerCurrentChallenge(elements) {
 }
 
 function getCurrentChallengeAnswer(elements) {
-    const match = elements.unblockChallengeQuestion.textContent.match(/Solve: (\d+) ([+-]) (\d+) =/);
-    assert.ok(match, `Unexpected challenge: ${elements.unblockChallengeQuestion.textContent}`);
+    const challenge = elements.unblockChallengeQuestion.textContent
+        .replace(/^Solve: /, "")
+        .replace(/ =$/, "");
 
-    const left = Number(match[1]);
-    const right = Number(match[3]);
+    let match = challenge.match(/^(\d+) x (\d+) \+ (\d+)$/);
+    if (match) {
+        return Number(match[1]) * Number(match[2]) + Number(match[3]);
+    }
 
-    return match[2] === "+" ? left + right : left - right;
+    match = challenge.match(/^(\d+) - (\d+) x (\d+)$/);
+    if (match) {
+        return Number(match[1]) - Number(match[2]) * Number(match[3]);
+    }
+
+    match = challenge.match(/^\((\d+) \+ (\d+)\) x (\d+)$/);
+    if (match) {
+        return (Number(match[1]) + Number(match[2])) * Number(match[3]);
+    }
+
+    assert.fail(`Unexpected challenge: ${elements.unblockChallengeQuestion.textContent}`);
 }
 
 function createDocumentMock(elements) {
