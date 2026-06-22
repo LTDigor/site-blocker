@@ -469,6 +469,11 @@ h2 {
     font-weight: 800;
 }
 
+#unblockChallengeQuestion {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
 .math-challenge input {
     width: 100%;
     box-sizing: border-box;

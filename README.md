@@ -45,6 +45,7 @@ URL Image Blocker блокирует сайты и отдельные URL-адр
 
 - `example.com` — блокирует весь домен.
 - `example.com/news` — блокирует путь, начинающийся с `/news`.
+- `example.com/^$` — блокирует только корень сайта, например `https://example.com/`, но не `/news`.
 - `example.com/^articles/[0-9]+` — блокирует путь по регулярному выражению.
 
 ### Структура проекта
@@ -96,6 +97,7 @@ Blocked site examples:
 
 - `example.com` blocks the entire domain.
 - `example.com/news` blocks any path that starts with `/news`.
+- `example.com/^$` blocks only the site root, for example `https://example.com/`, but not `/news`.
 - `example.com/^articles/[0-9]+` blocks paths using a regular expression.
 
 ### Project structure

@@ -361,15 +361,14 @@ function createMathChallenge() {
     }
 
     if (challengeType === 3) {
-        const divisor = getRandomInteger(6, 12);
-        const quotient = getRandomInteger(23, 48);
+        const minuend = getRandomInteger(120, 260);
+        const subtrahend = getRandomInteger(35, 90);
         const factor = getRandomInteger(13, 19);
         const multiplier = getRandomInteger(5, 9);
-        const dividend = divisor * quotient;
 
         return {
-            question: `${dividend} / ${divisor} + ${factor} x ${multiplier}`,
-            answer: quotient + factor * multiplier
+            question: `${minuend} - ${subtrahend} + ${factor} x ${multiplier}`,
+            answer: minuend - subtrahend + factor * multiplier
         };
     }
 
