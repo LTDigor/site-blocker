@@ -124,10 +124,37 @@ test("content fallback redirects when a temporary unblock is removed", async (t)
     ]);
 });
 
+test("content fallback redirects after same-page route changes", async (t) => {
+    const redirects = [];
+    const { cleanup, location, runIntervals } = await setupContentScriptTest({
+        state: {
+            blockedSites: ["linkedin.com/feed"]
+        },
+        url: "https://www.linkedin.com/jobs/",
+        redirects
+    });
+    t.after(cleanup);
+
+    await import(`../../src/content/blocker.js?test=${Date.now()}-${Math.random()}`);
+    await Promise.resolve();
+
+    assert.deepEqual(redirects, []);
+
+    location.href = "https://www.linkedin.com/feed/";
+    runIntervals();
+    await Promise.resolve();
+
+    assert.deepEqual(redirects, [
+        "chrome-extension://test/src/blocked/block.html?blockedRule=linkedin.com%2Ffeed#https://www.linkedin.com/feed/"
+    ]);
+});
+
 async function setupContentScriptTest({ state, chrome, url, redirects }) {
     const previousBrowser = globalThis.browser;
     const previousChrome = globalThis.chrome;
     const previousLocation = globalThis.location;
+    const previousSetInterval = globalThis.setInterval;
+    const intervalCallbacks = [];
 
     globalThis.browser = undefined;
     globalThis.chrome = chrome || createChromeMock(state);
@@ -137,12 +164,23 @@ async function setupContentScriptTest({ state, chrome, url, redirects }) {
             redirects.push(nextUrl);
         }
     };
+    globalThis.setInterval = (callback) => {
+        intervalCallbacks.push(callback);
+        return intervalCallbacks.length;
+    };
 
     return {
+        location: globalThis.location,
+        runIntervals() {
+            for (const callback of intervalCallbacks) {
+                callback();
+            }
+        },
         cleanup() {
             globalThis.browser = previousBrowser;
             globalThis.chrome = previousChrome;
             globalThis.location = previousLocation;
+            globalThis.setInterval = previousSetInterval;
         }
     };
 }

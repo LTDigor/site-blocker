@@ -170,6 +170,15 @@
         });
     }
 
+    let lastCheckedUrl = globalThis.location.href;
+
+    function watchUrlChanges() {
+        if (globalThis.location.href === lastCheckedUrl) return;
+
+        lastCheckedUrl = globalThis.location.href;
+        readBlockedSites();
+    }
+
     nativeApi.storage.onChanged?.addListener((changes, areaName) => {
         if (
             areaName === "local" &&
@@ -179,5 +188,6 @@
         }
     });
 
+    globalThis.setInterval?.(watchUrlChanges, 250);
     readBlockedSites();
 }());
