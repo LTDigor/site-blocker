@@ -27,3 +27,11 @@ test("manifest allows stored images on extension pages", async () => {
     assert.match(extensionPagesPolicy, /img-src[^;]*data:/);
     assert.match(extensionPagesPolicy, /img-src[^;]*blob:/);
 });
+
+test("manifest uses a valid Manifest V3 background declaration", async () => {
+    const manifest = JSON.parse(await readFile(join(root, "manifest.json"), "utf8"));
+
+    assert.equal(manifest.manifest_version, 3);
+    assert.equal(manifest.background.service_worker, "src/background/background.js");
+    assert.equal(manifest.background.scripts, undefined);
+});

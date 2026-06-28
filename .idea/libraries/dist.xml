@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="dist">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/dist/site-blocker-chromium-v1.2.0.zip!/" />
+      <root url="jar://$PROJECT_DIR$/dist/site-blocker-v1.1.0.zip!/" />
+      <root url="jar://$PROJECT_DIR$/dist/site-blocker-firefox-v1.2.0.zip!/" />
+      <root url="jar://$PROJECT_DIR$/dist/site-blocker-v1.2.0.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -43,6 +43,9 @@ const TEMPORARY_UNBLOCK_DURATION_MS = 10 * 60 * 1000;
 const DEFAULT_BLOCK_IMAGE_URL = hasExtensionApi() ?
     getExtensionUrl("assets/images/image.jpg") :
     "../../assets/images/image.jpg";
+const LOCAL_BLOCK_IMAGE_URL = hasExtensionApi() ?
+    getExtensionUrl("assets/images/local-image.jpg") :
+    "../../assets/images/local-image.jpg";
 
 const storage = hasExtensionApi() ? extensionStorage.local : createMemoryStorage();
 let areRulesExpanded = false;
@@ -226,8 +229,16 @@ function formatTime(timestamp) {
 
 function getResolvedBlockImage() {
     return storage.get([BLOCKED_IMAGE_STORAGE_KEY]).then((data) => {
-        return data[BLOCKED_IMAGE_STORAGE_KEY] || DEFAULT_BLOCK_IMAGE_URL;
+        return data[BLOCKED_IMAGE_STORAGE_KEY] || LOCAL_BLOCK_IMAGE_URL;
     });
+}
+
+function setPreviewImage(imageUrl) {
+    unblockPreview.onerror = () => {
+        unblockPreview.onerror = null;
+        unblockPreview.src = DEFAULT_BLOCK_IMAGE_URL;
+    };
+    unblockPreview.src = imageUrl;
 }
 
 function openUnblockDialog(site) {
@@ -238,10 +249,10 @@ function openUnblockDialog(site) {
     challengeDialogTitle.textContent = "Are you sure you want to unblock?";
     unblockDialogText.textContent = `${site} will be available for 10 minutes.`;
     confirmUnblockButton.textContent = "Unblock 10 min";
-    unblockPreview.src = DEFAULT_BLOCK_IMAGE_URL;
+    setPreviewImage(LOCAL_BLOCK_IMAGE_URL);
 
     getResolvedBlockImage().then((imageUrl) => {
-        unblockPreview.src = imageUrl;
+        setPreviewImage(imageUrl);
     });
 
     if (typeof unblockDialog.showModal === "function") {
@@ -260,10 +271,10 @@ function openRemoveDialog(site) {
     challengeDialogTitle.textContent = "Remove blocked site?";
     unblockDialogText.textContent = `${site} will be removed from the block list.`;
     confirmUnblockButton.textContent = "Remove";
-    unblockPreview.src = DEFAULT_BLOCK_IMAGE_URL;
+    setPreviewImage(LOCAL_BLOCK_IMAGE_URL);
 
     getResolvedBlockImage().then((imageUrl) => {
-        unblockPreview.src = imageUrl;
+        setPreviewImage(imageUrl);
     });
 
     if (typeof unblockDialog.showModal === "function") {
@@ -361,15 +372,14 @@ function createMathChallenge() {
     }
 
     if (challengeType === 3) {
-        const divisor = getRandomInteger(6, 12);
-        const quotient = getRandomInteger(23, 48);
+        const minuend = getRandomInteger(120, 260);
+        const subtrahend = getRandomInteger(35, 90);
         const factor = getRandomInteger(13, 19);
         const multiplier = getRandomInteger(5, 9);
-        const dividend = divisor * quotient;
 
         return {
-            question: `${dividend} / ${divisor} + ${factor} x ${multiplier}`,
-            answer: quotient + factor * multiplier
+            question: `${minuend} - ${subtrahend} + ${factor} x ${multiplier}`,
+            answer: minuend - subtrahend + factor * multiplier
         };
     }
 

@@ -372,6 +372,29 @@ test("temporary unblock requires solving the math challenge", async (t) => {
     ]);
 });
 
+test("math challenge uses addition, subtraction, and multiplication without division", async (t) => {
+    const { elements, cleanup } = await setupPopupTest({
+        activeTab: {
+            id: 42,
+            url: "chrome-extension://test/src/blocked/block.html?blockedRule=example.com#https://example.com/"
+        },
+        initialState: {
+            blockedSites: ["example.com"]
+        },
+        randomValues: [0.5, 0.5, 0.5, 0.5, 0.5]
+    });
+    t.after(cleanup);
+
+    elements.currentUnblockBtn.onclick();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const challenge = elements.unblockChallengeQuestion.textContent;
+    assert.match(challenge, /^Solve: \d+ - \d+ \+ \d+ x \d+ =$/);
+    assert.doesNotMatch(challenge, /[/÷]/);
+    assert.equal(getCurrentChallengeAnswer(elements), 239);
+});
+
 test("removing a blocked site requires solving the math challenge", async (t) => {
     const { elements, state, cleanup } = await setupPopupTest({
         activeTab: {
@@ -413,11 +436,12 @@ test("removing a blocked site requires solving the math challenge", async (t) =>
     assert.equal(elements.formHint.textContent, "Blocked site removed.");
 });
 
-async function setupPopupTest({ activeTab, initialState = {}, now }) {
+async function setupPopupTest({ activeTab, initialState = {}, now, randomValues }) {
     const previousChrome = globalThis.chrome;
     const previousDocument = globalThis.document;
     const previousFileReader = globalThis.FileReader;
     const previousDateNow = Date.now;
+    const previousMathRandom = Math.random;
 
     const elements = createPopupElements();
     const state = {
@@ -431,6 +455,10 @@ async function setupPopupTest({ activeTab, initialState = {}, now }) {
     globalThis.FileReader = class {};
     if (now) {
         Date.now = () => now;
+    }
+    if (randomValues) {
+        let randomIndex = 0;
+        Math.random = () => randomValues[randomIndex++] ?? randomValues.at(-1);
     }
 
     await import(`../../src/popup/popup.js?test=${Date.now()}-${Math.random()}`);
@@ -446,6 +474,7 @@ async function setupPopupTest({ activeTab, initialState = {}, now }) {
             globalThis.document = previousDocument;
             globalThis.FileReader = previousFileReader;
             Date.now = previousDateNow;
+            Math.random = previousMathRandom;
         }
     };
 }
@@ -503,9 +532,9 @@ function getCurrentChallengeAnswer(elements) {
         return Number(match[1]) * Number(match[2]) + Number(match[3]) - Number(match[4]);
     }
 
-    match = challenge.match(/^(\d+) \/ (\d+) \+ (\d+) x (\d+)$/);
+    match = challenge.match(/^(\d+) - (\d+) \+ (\d+) x (\d+)$/);
     if (match) {
-        return Number(match[1]) / Number(match[2]) + Number(match[3]) * Number(match[4]);
+        return Number(match[1]) - Number(match[2]) + Number(match[3]) * Number(match[4]);
     }
 
     match = challenge.match(/^(\d+) - \((\d+) \+ (\d+)\) x (\d+)$/);

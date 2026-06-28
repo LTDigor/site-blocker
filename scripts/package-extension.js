@@ -16,6 +16,9 @@ const entries = [
     "src",
     "assets"
 ];
+const localOnlyEntries = [
+    "assets/images/local-image.jpg"
+];
 
 const targets = [
     {
@@ -51,6 +54,10 @@ for (const target of targets) {
             recursive: true,
             preserveTimestamps: false
         });
+    }
+
+    for (const entry of localOnlyEntries) {
+        rmSync(join(stagingDir, entry), { force: true });
     }
 
     await writeFile(
@@ -92,7 +99,7 @@ function createFirefoxManifest(manifest) {
     return {
         ...manifest,
         background: {
-            scripts: manifest.background.scripts,
+            scripts: [manifest.background.service_worker],
             type: "module",
             preferred_environment: ["document"]
         }
