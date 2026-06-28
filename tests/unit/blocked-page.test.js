@@ -22,7 +22,7 @@ test("blocked page shows the default image before storage resolves", async (t) =
     const importPromise = importBlockedPageScript();
     await storageRequested;
 
-    assert.equal(blockedImage.src, "chrome-extension://test/assets/images/image.jpg");
+    assert.equal(blockedImage.src, "chrome-extension://test/assets/images/local-image.jpg");
 
     resolveStorage({});
     await importPromise;
@@ -58,11 +58,36 @@ test("blocked page keeps the default image when storage is unavailable", async (
 
     await importBlockedPageScript();
 
-    assert.equal(blockedImage.src, "chrome-extension://test/assets/images/image.jpg");
+    assert.equal(blockedImage.src, "chrome-extension://test/assets/images/local-image.jpg");
 });
 
 test("blocked page keeps the default image when storage returns no data", async (t) => {
     const blockedImage = {};
+    const { cleanup } = setupBlockedPageTest({
+        blockedImage,
+        storageGet() {
+            return Promise.resolve(undefined);
+        }
+    });
+    t.after(cleanup);
+
+    await importBlockedPageScript();
+
+    assert.equal(blockedImage.src, "chrome-extension://test/assets/images/local-image.jpg");
+});
+
+test("blocked page falls back to the neutral default when local image is missing", async (t) => {
+    const blockedImage = {
+        set src(value) {
+            this.currentSrc = value;
+            if (value.endsWith("/assets/images/local-image.jpg")) {
+                this.onerror?.();
+            }
+        },
+        get src() {
+            return this.currentSrc;
+        }
+    };
     const { cleanup } = setupBlockedPageTest({
         blockedImage,
         storageGet() {
