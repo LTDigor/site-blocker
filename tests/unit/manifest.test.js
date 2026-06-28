@@ -35,3 +35,12 @@ test("manifest uses a valid Manifest V3 background declaration", async () => {
     assert.equal(manifest.background.service_worker, "src/background/background.js");
     assert.equal(manifest.background.scripts, undefined);
 });
+
+test("manifest declares the public single-purpose description", async () => {
+    const manifest = JSON.parse(await readFile(join(root, "manifest.json"), "utf8"));
+
+    assert.equal(
+        manifest.description,
+        "Block user-selected websites or URL paths and redirect them to a local block page."
+    );
+});
