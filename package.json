@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "package": "node scripts/package-extension.js",
-    "validate:release-version": "node scripts/validate-release-version.js",
+    "package": "node ../ObsidianVault/scripts/projects/site-blocker/scripts/package-extension.js",
+    "validate:release-version": "node ../ObsidianVault/scripts/projects/site-blocker/scripts/validate-release-version.js",
     "test": "node --test"
   }
 }

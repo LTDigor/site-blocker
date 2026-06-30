@@ -62,3 +62,24 @@ npm run package
 ```
 
 Packages are written to `dist/`.
+
+## Chrome Web Store Submission
+
+Before resubmitting, publish `privacy.html` at a public HTTPS URL and enter that
+URL in the Chrome Web Store Developer Dashboard privacy policy field. The
+preferred URL is the GitHub Pages page for this repo:
+
+```text
+https://ltdigor.github.io/site-blocker/privacy.html
+```
+
+If GitHub Pages is not enabled yet, enable it for the repository root on the
+primary branch after this file is pushed. As a fallback, the public GitHub page
+for `PRIVACY.md` can be used, but a dedicated HTML page is easier for reviewers
+to recognize as a direct policy page.
+
+1. Open the item in the Developer Dashboard.
+2. Go to the Privacy tab.
+3. Paste the public privacy policy URL into the Privacy Policy box.
+4. Open the saved URL in a signed-out or incognito browser session to confirm it
+   is publicly accessible and points directly to the policy.
