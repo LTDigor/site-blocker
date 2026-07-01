@@ -155,24 +155,70 @@
         ));
     }
 
-    function readBlockedSites() {
-        const storageKeys = [BLOCKED_SITES_KEY, TEMPORARY_UNBLOCKS_KEY];
+    let urlWatcherIntervalId = null;
+    let monitoringStopped = false;
 
-        if (globalThis.browser) {
-            nativeApi.storage.local.get(storageKeys).then((data) => {
-                redirectIfBlocked(data[BLOCKED_SITES_KEY], data[TEMPORARY_UNBLOCKS_KEY]);
-            });
+    function stopMonitoring() {
+        monitoringStopped = true;
+
+        if (urlWatcherIntervalId !== null) {
+            globalThis.clearInterval?.(urlWatcherIntervalId);
+            urlWatcherIntervalId = null;
+        }
+    }
+
+    function handleExtensionApiError(error) {
+        if (isExtensionContextInvalidated(error)) {
+            stopMonitoring();
             return;
         }
 
-        nativeApi.storage.local.get(storageKeys, (data) => {
-            redirectIfBlocked(data[BLOCKED_SITES_KEY], data[TEMPORARY_UNBLOCKS_KEY]);
-        });
+        throw error;
+    }
+
+    function isExtensionContextInvalidated(error) {
+        return error instanceof Error && /Extension context invalidated|Invalid extension context/i.test(error.message);
+    }
+
+    function redirectIfBlockedSafely(rawRules, temporaryUnblocks) {
+        try {
+            redirectIfBlocked(rawRules, temporaryUnblocks);
+        } catch (error) {
+            handleExtensionApiError(error);
+        }
+    }
+
+    function readBlockedSites() {
+        if (monitoringStopped) return;
+
+        const storageKeys = [BLOCKED_SITES_KEY, TEMPORARY_UNBLOCKS_KEY];
+
+        if (globalThis.browser) {
+            try {
+                nativeApi.storage.local.get(storageKeys)
+                    .then((data) => {
+                        redirectIfBlockedSafely(data[BLOCKED_SITES_KEY], data[TEMPORARY_UNBLOCKS_KEY]);
+                    })
+                    .catch(handleExtensionApiError);
+            } catch (error) {
+                handleExtensionApiError(error);
+            }
+            return;
+        }
+
+        try {
+            nativeApi.storage.local.get(storageKeys, (data) => {
+                redirectIfBlockedSafely(data[BLOCKED_SITES_KEY], data[TEMPORARY_UNBLOCKS_KEY]);
+            });
+        } catch (error) {
+            handleExtensionApiError(error);
+        }
     }
 
     let lastCheckedUrl = globalThis.location.href;
 
     function watchUrlChanges() {
+        if (monitoringStopped) return;
         if (globalThis.location.href === lastCheckedUrl) return;
 
         lastCheckedUrl = globalThis.location.href;
@@ -188,6 +234,6 @@
         }
     });
 
-    globalThis.setInterval?.(watchUrlChanges, 250);
+    urlWatcherIntervalId = globalThis.setInterval?.(watchUrlChanges, 250) ?? null;
     readBlockedSites();
 }());
