@@ -149,14 +149,82 @@ test("content fallback redirects after same-page route changes", async (t) => {
     ]);
 });
 
-async function setupContentScriptTest({ state, chrome, url, redirects }) {
+test("content fallback stops polling when extension context is invalidated", async (t) => {
+    const redirects = [];
+    let storageReads = 0;
+    const chrome = createChromeMock({
+        blockedSites: ["linkedin.com/feed"]
+    });
+    chrome.storage.local.get = (keys, callback) => {
+        storageReads += 1;
+
+        if (storageReads > 1) {
+            throw new Error("Extension context invalidated.");
+        }
+
+        callback(Object.fromEntries(keys.map((key) => [key, chrome.state[key]])));
+    };
+    const { cleanup, location, runIntervals, clearedIntervals } = await setupContentScriptTest({
+        chrome,
+        url: "https://www.linkedin.com/jobs/",
+        redirects
+    });
+    t.after(cleanup);
+
+    await import(`../../src/content/blocker.js?test=${Date.now()}-${Math.random()}`);
+    await Promise.resolve();
+
+    location.href = "https://www.linkedin.com/feed/";
+
+    assert.doesNotThrow(() => runIntervals());
+    assert.deepEqual(clearedIntervals, [1]);
+    assert.deepEqual(redirects, []);
+});
+
+test("content fallback stops polling when browser storage rejects after invalidation", async (t) => {
+    const redirects = [];
+    let storageReads = 0;
+    const browser = createBrowserMock({
+        blockedSites: ["mail.google.com/mail"]
+    });
+    browser.storage.local.get = async (keys) => {
+        storageReads += 1;
+
+        if (storageReads > 1) {
+            throw new Error("Extension context invalidated.");
+        }
+
+        return Object.fromEntries(keys.map((key) => [key, browser.state[key]]));
+    };
+    const { cleanup, location, runIntervals, clearedIntervals } = await setupContentScriptTest({
+        browser,
+        url: "https://mail.google.com/calendar/",
+        redirects
+    });
+    t.after(cleanup);
+
+    await import(`../../src/content/blocker.js?test=${Date.now()}-${Math.random()}`);
+    await Promise.resolve();
+
+    location.href = "https://mail.google.com/mail/u/0/#inbox";
+    runIntervals();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert.deepEqual(clearedIntervals, [1]);
+    assert.deepEqual(redirects, []);
+});
+
+async function setupContentScriptTest({ state, chrome, browser, url, redirects }) {
     const previousBrowser = globalThis.browser;
     const previousChrome = globalThis.chrome;
     const previousLocation = globalThis.location;
     const previousSetInterval = globalThis.setInterval;
+    const previousClearInterval = globalThis.clearInterval;
     const intervalCallbacks = [];
+    const clearedIntervals = [];
 
-    globalThis.browser = undefined;
+    globalThis.browser = browser;
     globalThis.chrome = chrome || createChromeMock(state);
     globalThis.location = {
         href: url,
@@ -168,8 +236,12 @@ async function setupContentScriptTest({ state, chrome, url, redirects }) {
         intervalCallbacks.push(callback);
         return intervalCallbacks.length;
     };
+    globalThis.clearInterval = (intervalId) => {
+        clearedIntervals.push(intervalId);
+    };
 
     return {
+        clearedIntervals,
         location: globalThis.location,
         runIntervals() {
             for (const callback of intervalCallbacks) {
@@ -181,12 +253,14 @@ async function setupContentScriptTest({ state, chrome, url, redirects }) {
             globalThis.chrome = previousChrome;
             globalThis.location = previousLocation;
             globalThis.setInterval = previousSetInterval;
+            globalThis.clearInterval = previousClearInterval;
         }
     };
 }
 
 function createChromeMock(state) {
     return {
+        state,
         runtime: {
             getURL(path) {
                 return `chrome-extension://test/${path}`;
@@ -196,6 +270,29 @@ function createChromeMock(state) {
             local: {
                 get(keys, callback) {
                     callback(Object.fromEntries(keys.map((key) => [key, state[key]])));
+                }
+            },
+            onChanged: {
+                addListener(listener) {
+                    this.listener = listener;
+                }
+            }
+        }
+    };
+}
+
+function createBrowserMock(state) {
+    return {
+        state,
+        runtime: {
+            getURL(path) {
+                return `chrome-extension://test/${path}`;
+            }
+        },
+        storage: {
+            local: {
+                async get(keys) {
+                    return Object.fromEntries(keys.map((key) => [key, state[key]]));
                 }
             },
             onChanged: {
