@@ -31,6 +31,7 @@ test("background installs dynamic redirect rules that preserve the original URL"
         chrome.declarativeNetRequest.updatedRules[0].condition.regexFilter,
         "^https?://([^/?#]+\\.)?example\\.com(?::[0-9]+)?/news.*$"
     );
+    assert.equal(chrome.declarativeNetRequest.lastRegexSupportCheck.isCaseSensitive, false);
 });
 
 function createChromeMock(state) {

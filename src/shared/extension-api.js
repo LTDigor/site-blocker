@@ -3,7 +3,13 @@ export function hasExtensionApi() {
 }
 
 export function getExtensionUrl(path) {
-    return getNativeApi().runtime.getURL(path);
+    const nativeApi = getNativeApi();
+
+    if (!nativeApi?.runtime?.getURL) {
+        throw new Error("Extension API unavailable: getURL");
+    }
+
+    return nativeApi.runtime.getURL(path);
 }
 
 export const extensionEvents = {
@@ -47,7 +53,7 @@ export const extensionAlarms = {
             return Promise.reject(new Error("Extension API unavailable: create"));
         }
 
-        return Promise.resolve(alarms.create(name, alarmInfo));
+        return Promise.resolve().then(() => alarms.create(name, alarmInfo));
     }
 };
 
@@ -95,7 +101,7 @@ function callApi(namespace, methodName, args = []) {
     }
 
     if (usesPromiseApi) {
-        return Promise.resolve(namespace[methodName](...args));
+        return Promise.resolve().then(() => namespace[methodName](...args));
     }
 
     return new Promise((resolve, reject) => {

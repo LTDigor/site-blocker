@@ -15,8 +15,8 @@ test("accepts plain domains, paths, URLs, regex paths, localhost, and IDN domain
         ["https://openai.com/blog", "openai.com/blog"],
         ["example.com/^articles/[0-9]+", "example.com/^articles/[0-9]+"],
         ["localhost", "localhost"],
-        ["ввв.рф", "ввв.рф"],
-        ["https://пример.рф/news", "пример.рф/news"],
+        ["ввв.рф", "xn--b1aaa.xn--p1ai"],
+        ["https://пример.рф/news", "xn--e1afmkfd.xn--p1ai/news"],
         ["example.com/café", "example.com/caf%C3%A9"]
     ];
 
@@ -134,13 +134,15 @@ test("normalizes existing stored rules after extension updates", () => {
             "example.com/^[",
             "ftp://example.com",
             "example.com/café",
-            "ввв.рф"
+            "ввв.рф",
+            "Example.com"
         ]),
         [
             "linkedin.com",
             "linkedin.com/feed",
             "example.com/caf%C3%A9",
-            "ввв.рф"
+            "xn--b1aaa.xn--p1ai",
+            "example.com"
         ]
     );
 });

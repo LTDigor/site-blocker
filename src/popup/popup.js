@@ -28,6 +28,7 @@ const currentBlockSite = documentRef.getElementById("currentBlockSite");
 const currentBlockStatus = documentRef.getElementById("currentBlockStatus");
 const currentUnblockButton = documentRef.getElementById("currentUnblockBtn");
 const unblockDialog = documentRef.getElementById("unblockDialog");
+const unblockForm = documentRef.getElementById("unblockForm");
 const unblockPreview = documentRef.getElementById("unblockPreview");
 const challengeDialogTitle = documentRef.getElementById("challengeDialogTitle");
 const unblockDialogText = documentRef.getElementById("unblockDialogText");
@@ -95,7 +96,7 @@ function render(sites, temporaryUnblocks = currentTemporaryUnblocks) {
 
     sites.forEach((site) => {
         const li = documentRef.createElement("li");
-        li.className = "rule-item rule-item-static";
+        li.className = "rule-item";
 
         const ruleDetails = documentRef.createElement("div");
         ruleDetails.className = "rule-details";
@@ -109,6 +110,15 @@ function render(sites, temporaryUnblocks = currentTemporaryUnblocks) {
         unblockStatus.className = "rule-status";
         const expiresAt = currentTemporaryUnblocks[site];
         unblockStatus.textContent = expiresAt ? `Unblocked until ${formatTime(expiresAt)}` : "";
+
+        const unblock = documentRef.createElement("button");
+        unblock.className = "unblock-button";
+        unblock.type = "button";
+        unblock.textContent = expiresAt ? "Extend 10 min" : "Unblock 10 min";
+        unblock.setAttribute("aria-label", `Unblock ${site} for 10 minutes`);
+        unblock.onclick = () => {
+            openUnblockDialog(site);
+        };
 
         const remove = documentRef.createElement("button");
         remove.className = "remove-button";
@@ -124,6 +134,7 @@ function render(sites, temporaryUnblocks = currentTemporaryUnblocks) {
         ruleDetails.appendChild(ruleText);
         ruleDetails.appendChild(unblockStatus);
         li.appendChild(ruleDetails);
+        li.appendChild(unblock);
         li.appendChild(remove);
         list.appendChild(li);
     });
@@ -444,10 +455,15 @@ function saveBlockedImage(file) {
     const reader = new FileReader();
 
     reader.onload = () => {
-        storage.set({ [BLOCKED_IMAGE_STORAGE_KEY]: reader.result }).then(() => {
-            renderImageState(true);
-            setImageHint("Local block image saved.");
-        });
+        storage
+            .set({ [BLOCKED_IMAGE_STORAGE_KEY]: reader.result })
+            .then(() => {
+                renderImageState(true);
+                setImageHint("Local block image saved.");
+            })
+            .catch((error) => {
+                setImageHint(getErrorMessage(error, "Could not save this image."), true);
+            });
     };
 
     reader.onerror = () => {
@@ -562,8 +578,12 @@ cancelUnblockButton.onclick = () => {
     closeUnblockDialog();
 };
 
-confirmUnblockButton.onclick = () => {
-    return confirmTemporaryUnblock();
+unblockForm.onsubmit = (event) => {
+    event.preventDefault();
+
+    return confirmTemporaryUnblock().catch((error) => {
+        unblockChallengeHint.textContent = getErrorMessage(error, "Something went wrong. Try again.");
+    });
 };
 
 setRulesExpanded(false);
@@ -587,11 +607,20 @@ initializeCurrentTabContext().then(() => storage.get(["blockedSites", TEMPORARY_
     }
 
     render(normalizedSites, temporaryUnblocks);
+}).catch((error) => {
+    render([], {});
+    setHint(getErrorMessage(error, "Could not load blocked sites."), true);
 });
 
 storage.get([BLOCKED_IMAGE_STORAGE_KEY]).then((data) => {
     renderImageState(Boolean(data[BLOCKED_IMAGE_STORAGE_KEY]));
+}).catch((error) => {
+    setImageHint(getErrorMessage(error, "Could not load image state."), true);
 });
+
+function getErrorMessage(error, fallbackMessage) {
+    return error?.message || fallbackMessage;
+}
 
 function areSameRules(leftRules, rightRules) {
     return leftRules.length === rightRules.length &&

@@ -3,6 +3,9 @@
   "version": "1.2.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "package": "node ../ObsidianVault/scripts/projects/site-blocker/scripts/package-extension.js",
     "validate:release-version": "node ../ObsidianVault/scripts/projects/site-blocker/scripts/validate-release-version.js",

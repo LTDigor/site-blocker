@@ -69,7 +69,8 @@
       "matches": [
         "http://*/*",
         "https://*/*"
-      ]
+      ],
+      "use_dynamic_url": true
     }
   ]
 }

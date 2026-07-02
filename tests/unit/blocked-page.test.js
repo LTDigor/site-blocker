@@ -166,6 +166,27 @@ test("blocked page reload ignores unsafe original URL context", async (t) => {
     assert.deepEqual(redirects, []);
 });
 
+test("blocked page reload refuses mismatched original URL context", async (t) => {
+    const redirects = [];
+    const { cleanup } = setupBlockedPageTest({
+        blockedImage: {},
+        url: "chrome-extension://test/src/blocked/block.html?blockedRule=youtube.com#https://attacker.test/phish",
+        redirects,
+        storageGet() {
+            return Promise.resolve({
+                temporaryUnblocks: {
+                    "youtube.com": Date.now() + 60000
+                }
+            });
+        }
+    });
+    t.after(cleanup);
+
+    await importBlockedPageScript();
+
+    assert.deepEqual(redirects, []);
+});
+
 function setupBlockedPageTest({ blockedImage, storageGet, url, redirects = [] }) {
     const previousBrowser = globalThis.browser;
     const previousChrome = globalThis.chrome;

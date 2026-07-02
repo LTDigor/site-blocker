@@ -157,7 +157,7 @@ export function buildDeclarativeNetRequestRules(
             condition: {
                 regexFilter: buildFullUrlRegex(parsedRule),
                 resourceTypes: ["main_frame"],
-                isUrlFilterCaseSensitive: true,
+                isUrlFilterCaseSensitive: false,
                 ...buildRuleConditionExclusions(parsedRule)
             }
         });

@@ -71,7 +71,7 @@
 </main>
 
 <dialog class="confirm-dialog" id="unblockDialog">
-    <form class="confirm-panel" method="dialog">
+    <form class="confirm-panel" id="unblockForm" method="dialog">
         <img class="confirm-image" id="unblockPreview" alt="Blocked">
         <h2 id="challengeDialogTitle">Are you sure you want to unblock?</h2>
         <p class="confirm-copy" id="unblockDialogText">This site will be available for 10 minutes.</p>
@@ -82,7 +82,7 @@
         <p class="challenge-hint" id="unblockChallengeHint"></p>
         <div class="confirm-actions">
             <button class="secondary-button" id="cancelUnblockBtn" type="button">Cancel</button>
-            <button class="confirm-button" id="confirmUnblockBtn" type="button">Unblock 10 min</button>
+            <button class="confirm-button" id="confirmUnblockBtn" type="submit">Unblock 10 min</button>
         </div>
     </form>
 </dialog>
