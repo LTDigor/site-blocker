@@ -207,7 +207,12 @@
         }
 
         try {
-            nativeApi.storage.local.get(storageKeys, (data) => {
+            nativeApi.storage.local.get(storageKeys, (data = {}) => {
+                if (nativeApi.runtime.lastError) {
+                    handleExtensionApiError(new Error(nativeApi.runtime.lastError.message));
+                    return;
+                }
+
                 redirectIfBlockedSafely(data[BLOCKED_SITES_KEY], data[TEMPORARY_UNBLOCKS_KEY]);
             });
         } catch (error) {

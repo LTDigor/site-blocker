@@ -2,6 +2,10 @@ import {
     extensionStorage,
     getExtensionUrl
 } from "../shared/extension-api.js";
+import {
+    matchesUrl,
+    parseRule
+} from "../background/rules.js";
 
 const blockedImage = document.getElementById("blockedImage");
 const defaultImageUrl = getExtensionUrl("assets/images/image.jpg");
@@ -34,10 +38,19 @@ function redirectIfTemporarilyUnblocked(temporaryUnblocks = {}) {
     if (
         blockedRule &&
         originalUrl &&
+        matchesBlockedRule(originalUrl, blockedRule) &&
         Number.isFinite(temporaryUnblocks[blockedRule]) &&
         temporaryUnblocks[blockedRule] > Date.now()
     ) {
         globalThis.location.replace(originalUrl);
+    }
+}
+
+function matchesBlockedRule(url, blockedRule) {
+    try {
+        return matchesUrl(url, [parseRule(blockedRule)]);
+    } catch {
+        return false;
     }
 }
 

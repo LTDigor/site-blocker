@@ -149,7 +149,7 @@ test("builds declarativeNetRequest redirect rules", () => {
             condition: {
                 regexFilter: "^https?://([^/?#]+\\.)?example\\.com(?::[0-9]+)?([/?#].*)?$",
                 resourceTypes: ["main_frame"],
-                isUrlFilterCaseSensitive: true
+                isUrlFilterCaseSensitive: false
             }
         },
         {
@@ -164,7 +164,7 @@ test("builds declarativeNetRequest redirect rules", () => {
             condition: {
                 regexFilter: "^https?://([^/?#]+\\.)?example\\.com(?::[0-9]+)?/news.*$",
                 resourceTypes: ["main_frame"],
-                isUrlFilterCaseSensitive: true
+                isUrlFilterCaseSensitive: false
             }
         },
         {
@@ -179,7 +179,7 @@ test("builds declarativeNetRequest redirect rules", () => {
             condition: {
                 regexFilter: "^https?://([^/?#]+\\.)?example\\.com(?::[0-9]+)?/articles\\/[0-9]+.*$",
                 resourceTypes: ["main_frame"],
-                isUrlFilterCaseSensitive: true
+                isUrlFilterCaseSensitive: false
             }
         }
     ]);

@@ -107,13 +107,13 @@ test("temporarily unblocking a blocked site confirms with block image preview", 
     assert.equal(elements.unblockDialogText.textContent, "example.com will be available for 10 minutes.");
     answerCurrentChallenge(elements);
 
-    await elements.confirmUnblockBtn.onclick();
+    await submitUnblockForm(elements);
 
     assert.deepEqual(state.blockedSites, ["example.com", "openai.com"]);
     assert.deepEqual(state.temporaryUnblocks, {
         "example.com": now + 10 * 60 * 1000
     });
-    assert.notEqual(elements.formHint.textContent, "example.com unblocked for 10 minutes.");
+    assert.equal(elements.formHint.textContent, "");
     assert.equal(elements.unblockDialog.open, false);
     assert.equal(elements.currentBlockStatus.textContent.startsWith("Unblocked until "), true);
     assert.deepEqual(chrome.tabs.updatedTabs, [
@@ -144,7 +144,7 @@ test("temporarily unblocking falls back to the rule URL without original block p
     await Promise.resolve();
     await Promise.resolve();
     answerCurrentChallenge(elements);
-    await elements.confirmUnblockBtn.onclick();
+    await submitUnblockForm(elements);
 
     assert.deepEqual(chrome.tabs.updatedTabs, [
         {
@@ -174,7 +174,7 @@ test("temporarily unblocking ignores unsafe original block page context", async 
     await Promise.resolve();
     await Promise.resolve();
     answerCurrentChallenge(elements);
-    await elements.confirmUnblockBtn.onclick();
+    await submitUnblockForm(elements);
 
     assert.deepEqual(chrome.tabs.updatedTabs, [
         {
@@ -204,7 +204,7 @@ test("temporarily unblocking preserves original URL hashes", async (t) => {
     await Promise.resolve();
     await Promise.resolve();
     answerCurrentChallenge(elements);
-    await elements.confirmUnblockBtn.onclick();
+    await submitUnblockForm(elements);
 
     assert.deepEqual(chrome.tabs.updatedTabs, [
         {
@@ -234,7 +234,7 @@ test("temporarily unblocking path-specific rules restores the exact original URL
     await Promise.resolve();
     await Promise.resolve();
     answerCurrentChallenge(elements);
-    await elements.confirmUnblockBtn.onclick();
+    await submitUnblockForm(elements);
 
     assert.deepEqual(chrome.tabs.updatedTabs, [
         {
@@ -349,7 +349,7 @@ test("temporary unblock requires solving the math challenge", async (t) => {
     await Promise.resolve();
 
     elements.unblockChallengeAnswer.value = String(getCurrentChallengeAnswer(elements) + 1);
-    await elements.confirmUnblockBtn.onclick();
+    await submitUnblockForm(elements);
 
     assert.deepEqual(state.temporaryUnblocks, undefined);
     assert.deepEqual(chrome.tabs.updatedTabs, []);
@@ -357,7 +357,7 @@ test("temporary unblock requires solving the math challenge", async (t) => {
     assert.equal(elements.unblockChallengeHint.textContent, "Solve the math example to continue.");
 
     answerCurrentChallenge(elements);
-    await elements.confirmUnblockBtn.onclick();
+    await submitUnblockForm(elements);
 
     assert.deepEqual(state.temporaryUnblocks, {
         "example.com": now + 10 * 60 * 1000
@@ -410,7 +410,7 @@ test("removing a blocked site requires solving the math challenge", async (t) =>
     });
     t.after(cleanup);
 
-    const removeButton = elements.list.children[0].children[1];
+    const removeButton = elements.list.children[0].children[2];
     removeButton.onclick();
     await Promise.resolve();
     await Promise.resolve();
@@ -421,14 +421,14 @@ test("removing a blocked site requires solving the math challenge", async (t) =>
     assert.equal(elements.confirmUnblockBtn.textContent, "Remove");
 
     elements.unblockChallengeAnswer.value = String(getCurrentChallengeAnswer(elements) + 1);
-    await elements.confirmUnblockBtn.onclick();
+    await submitUnblockForm(elements);
 
     assert.deepEqual(state.blockedSites, ["example.com", "openai.com"]);
     assert.equal(elements.unblockDialog.open, true);
     assert.equal(elements.unblockChallengeHint.textContent, "Solve the math example to continue.");
 
     answerCurrentChallenge(elements);
-    await elements.confirmUnblockBtn.onclick();
+    await submitUnblockForm(elements);
 
     assert.deepEqual(state.blockedSites, ["openai.com"]);
     assert.deepEqual(state.temporaryUnblocks, {});
@@ -500,6 +500,7 @@ function createPopupElements() {
         "currentBlockStatus",
         "currentUnblockBtn",
         "unblockDialog",
+        "unblockForm",
         "unblockPreview",
         "challengeDialogTitle",
         "unblockDialogText",
@@ -515,6 +516,12 @@ function createPopupElements() {
 
 function answerCurrentChallenge(elements) {
     elements.unblockChallengeAnswer.value = String(getCurrentChallengeAnswer(elements));
+}
+
+function submitUnblockForm(elements) {
+    return elements.unblockForm.onsubmit({
+        preventDefault() {}
+    });
 }
 
 function getCurrentChallengeAnswer(elements) {

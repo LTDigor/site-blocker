@@ -15,6 +15,7 @@ const BLOCKED_SITES_KEY = "blockedSites";
 const TEMPORARY_UNBLOCKS_KEY = "temporaryUnblocks";
 const BLOCKED_PAGE_PATH = "/src/blocked/block.html";
 const TEMPORARY_UNBLOCK_ALARM = "temporary-unblock-expired";
+let ruleUpdateQueue = Promise.resolve();
 
 async function loadRules() {
     const data = await extensionStorage.local.get([BLOCKED_SITES_KEY, TEMPORARY_UNBLOCKS_KEY]);
@@ -48,22 +49,26 @@ async function applyTemporaryUnblock(site, expiresAt) {
 }
 
 async function updateBlockingRules(rawRules, temporaryUnblocks = {}) {
-    try {
-        const rules = buildDeclarativeNetRequestRules(
-            rawRules,
-            getExtensionUrl(BLOCKED_PAGE_PATH.replace(/^\//, "")),
-            temporaryUnblocks
-        );
-        const supportedRules = await filterSupportedRules(rules);
-        const existingRules = await extensionDeclarativeNetRequest.getDynamicRules();
+    ruleUpdateQueue = ruleUpdateQueue
+        .catch(() => {})
+        .then(() => applyBlockingRules(rawRules, temporaryUnblocks));
 
-        await extensionDeclarativeNetRequest.updateDynamicRules({
-            removeRuleIds: existingRules.map((rule) => rule.id),
-            addRules: supportedRules
-        });
-    } catch (error) {
-        console.error("Failed to update blocking rules:", error);
-    }
+    return ruleUpdateQueue;
+}
+
+async function applyBlockingRules(rawRules, temporaryUnblocks = {}) {
+    const rules = buildDeclarativeNetRequestRules(
+        rawRules,
+        getExtensionUrl(BLOCKED_PAGE_PATH.replace(/^\//, "")),
+        temporaryUnblocks
+    );
+    const supportedRules = await filterSupportedRules(rules);
+    const existingRules = await extensionDeclarativeNetRequest.getDynamicRules();
+
+    await extensionDeclarativeNetRequest.updateDynamicRules({
+        removeRuleIds: existingRules.map((rule) => rule.id),
+        addRules: supportedRules
+    });
 }
 
 async function scheduleTemporaryUnblockRefresh(temporaryUnblocks) {
@@ -99,7 +104,7 @@ function isRegexSupported(regex) {
     return extensionDeclarativeNetRequest
         .isRegexSupported({
             regex,
-            isCaseSensitive: true
+            isCaseSensitive: false
         })
         .then((result) => {
             if (!result.isSupported) {
@@ -119,13 +124,13 @@ extensionEvents.storage.onChanged.addListener((changes, areaName) => {
         areaName === "local" &&
         (changes[BLOCKED_SITES_KEY] || changes[TEMPORARY_UNBLOCKS_KEY])
     ) {
-        loadRules();
+        loadRulesSafely();
     }
 });
 
 extensionEvents.alarms.onAlarm?.addListener((alarm) => {
     if (alarm.name === TEMPORARY_UNBLOCK_ALARM) {
-        loadRules();
+        loadRulesSafely();
     }
 });
 
@@ -144,9 +149,15 @@ extensionEvents.runtime.onMessage?.addListener((message, sender, sendResponse) =
     return true;
 });
 
-extensionEvents.runtime.onInstalled.addListener(loadRules);
-extensionEvents.runtime.onStartup.addListener(loadRules);
-loadRules();
+extensionEvents.runtime.onInstalled.addListener(loadRulesSafely);
+extensionEvents.runtime.onStartup.addListener(loadRulesSafely);
+loadRulesSafely();
+
+function loadRulesSafely() {
+    loadRules().catch((error) => {
+        console.error("Failed to load blocking rules:", error);
+    });
+}
 
 function areSameTemporaryUnblocks(leftUnblocks, rightUnblocks) {
     const leftEntries = Object.entries(leftUnblocks);

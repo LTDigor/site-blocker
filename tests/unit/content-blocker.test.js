@@ -41,16 +41,42 @@ test("content fallback ignores unblocked pages", async (t) => {
 test("content fallback ignores YouTube Chrome auth pages", async (t) => {
     const redirects = [];
 
-    await setupContentScriptTest({
+    const { cleanup } = await setupContentScriptTest({
         state: {
             blockedSites: ["youtube.com"]
         },
         url: "https://accounts.youtube.com/accounts/SetSID",
         redirects
     });
+    t.after(cleanup);
 
     await import(`../../src/content/blocker.js?test=${Date.now()}-${Math.random()}`);
+    await Promise.resolve();
 
+    assert.deepEqual(redirects, []);
+});
+
+test("content fallback stops polling when Chrome storage reports lastError", async (t) => {
+    const redirects = [];
+    const chrome = createChromeMock({
+        blockedSites: ["linkedin.com/feed"]
+    });
+    chrome.storage.local.get = (keys, callback) => {
+        chrome.runtime.lastError = { message: "Extension context invalidated." };
+        callback(Object.fromEntries(keys.map((key) => [key, chrome.state[key]])));
+        delete chrome.runtime.lastError;
+    };
+    const { cleanup, clearedIntervals } = await setupContentScriptTest({
+        chrome,
+        url: "https://www.linkedin.com/feed/",
+        redirects
+    });
+    t.after(cleanup);
+
+    await import(`../../src/content/blocker.js?test=${Date.now()}-${Math.random()}`);
+    await Promise.resolve();
+
+    assert.deepEqual(clearedIntervals, [1]);
     assert.deepEqual(redirects, []);
 });
 

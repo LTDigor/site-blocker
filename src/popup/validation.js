@@ -67,9 +67,11 @@ export function validateLocalImageFile(file, maxSizeBytes = 4 * 1024 * 1024) {
     }
 
     if (file.size > maxSizeBytes) {
+        const maxSizeMb = (maxSizeBytes / (1024 * 1024)).toFixed(0);
+
         return {
             isValid: false,
-            message: "Choose an image up to 4 MB."
+            message: `Choose an image up to ${maxSizeMb} MB.`
         };
     }
 
@@ -124,6 +126,11 @@ function parseInputRule(rule) {
                     hasUnsupportedAuthority: true
                 };
             }
+
+            return {
+                hostname: url.hostname,
+                path: url.pathname === "/" ? "" : normalizePath(url.pathname)
+            };
         } catch {
             return {
                 hostname: "",
@@ -165,7 +172,7 @@ function findFirstIndex(value, needles) {
 }
 
 function normalizeRule({ hostname, path }) {
-    const normalizedHostname = hostname.replace(/^www\./i, "");
+    const normalizedHostname = normalizeHostname(hostname).replace(/^www\./i, "");
 
     if (!path || path === "/") {
         return normalizedHostname;
@@ -198,22 +205,26 @@ function isValidRegexPath(path) {
 
 function isValidHostname(hostname) {
     if (!hostname || hostname.length > 253) return false;
-    if (hostname.toLowerCase() === "localhost") return true;
 
-    let asciiHostname;
     try {
-        asciiHostname = new URL(`https://${hostname}`).hostname;
+        const asciiHostname = normalizeHostname(hostname);
+        if (asciiHostname === "localhost") return true;
+
+        const labels = asciiHostname.split(".");
+        if (labels.length < 2) return false;
+
+        return labels.every((label) =>
+            label.length > 0 &&
+            label.length <= 63 &&
+            /^[a-z\d](?:[a-z\d-]*[a-z\d])?$/i.test(label)
+        );
     } catch {
         return false;
     }
+}
 
-    const labels = asciiHostname.split(".");
+function normalizeHostname(hostname) {
+    if (hostname.toLowerCase() === "localhost") return "localhost";
 
-    if (labels.length < 2) return false;
-
-    return labels.every((label) =>
-        label.length > 0 &&
-        label.length <= 63 &&
-        /^[a-z\d](?:[a-z\d-]*[a-z\d])?$/i.test(label)
-    );
+    return new URL(`https://${hostname}`).hostname;
 }
