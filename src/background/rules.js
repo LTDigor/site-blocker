@@ -34,7 +34,7 @@ function splitRule(rule) {
     }
 
     const suffix = normalizedRule.slice(domainEndIndex);
-    const pathEndIndex = findFirstIndex(suffix, ["?", "#"]);
+    const pathEndIndex = findFirstIndex(suffix, suffix.startsWith("/^") ? ["#"] : ["?", "#"]);
     const pathPart = suffix.startsWith("/") ? suffix.slice(1, pathEndIndex) : "";
 
     return {
@@ -157,7 +157,7 @@ export function buildDeclarativeNetRequestRules(
             condition: {
                 regexFilter: buildFullUrlRegex(parsedRule),
                 resourceTypes: ["main_frame"],
-                isUrlFilterCaseSensitive: false,
+                isUrlFilterCaseSensitive: true,
                 ...buildRuleConditionExclusions(parsedRule)
             }
         });

@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "status": "FIX_PROVEN",
+  "reason": "The same three focused reproducers changed from failing to passing and the full relevant suite passed.",
+  "reproduction": "confirmed",
+  "full_suite": "passed",
+  "same_command": true,
+  "before": {
+    "schema_version": 1,
+    "label": "reproduced",
+    "command": [
+      "node",
+      "--test",
+      "tests/unit/popup-validation.test.js",
+      "tests/unit/rules.test.js",
+      "tests/unit/popup-current-site.test.js"
+    ],
+    "duration_ms": 192.419,
+    "exit_code": 1,
+    "timed_out": false,
+    "stdout": "49 passed, 3 failed. Regex input example.com/^articles?$ was normalized to example.com/^articles. The DNR regex matched https://example.com/News while the fallback matcher did not. Unblocking openai.com from the example.com block page reopened https://example.com/private instead of https://openai.com/.",
+    "stderr": "",
+    "stdout_truncated": false,
+    "stderr_truncated": false,
+    "secrets_redacted": true
+  },
+  "after": {
+    "schema_version": 1,
+    "label": "fixed",
+    "command": [
+      "node",
+      "--test",
+      "tests/unit/popup-validation.test.js",
+      "tests/unit/rules.test.js",
+      "tests/unit/popup-current-site.test.js"
+    ],
+    "duration_ms": 173.334,
+    "exit_code": 0,
+    "timed_out": false,
+    "stdout": "53 passed, 0 failed.",
+    "stderr": "",
+    "stdout_truncated": false,
+    "stderr_truncated": false,
+    "secrets_redacted": true
+  }
+}

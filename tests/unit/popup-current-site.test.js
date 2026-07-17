@@ -246,6 +246,40 @@ test("temporarily unblocking path-specific rules restores the exact original URL
     ]);
 });
 
+test("unblocking a different listed rule does not reuse the current block-page URL", async (t) => {
+    const now = 1_700_000_000_000;
+    const { elements, chrome, state, cleanup } = await setupPopupTest({
+        activeTab: {
+            id: 42,
+            url: "chrome-extension://test/src/blocked/block.html?blockedRule=example.com#https://example.com/private"
+        },
+        initialState: {
+            blockedSites: ["example.com", "openai.com"]
+        },
+        now
+    });
+    t.after(cleanup);
+
+    const openAiUnblockButton = elements.list.children[1].children[1];
+    openAiUnblockButton.onclick();
+    await Promise.resolve();
+    await Promise.resolve();
+    answerCurrentChallenge(elements);
+    await submitUnblockForm(elements);
+
+    assert.deepEqual(state.temporaryUnblocks, {
+        "openai.com": now + 5 * 60 * 1000
+    });
+    assert.deepEqual(chrome.tabs.updatedTabs, [
+        {
+            tabId: 42,
+            options: {
+                url: "https://openai.com/"
+            }
+        }
+    ]);
+});
+
 test("popup on a blocked page only shows the currently blocked site as unblockable", async (t) => {
     const { elements, cleanup } = await setupPopupTest({
         activeTab: {

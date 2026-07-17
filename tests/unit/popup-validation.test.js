@@ -28,6 +28,13 @@ test("accepts plain domains, paths, URLs, regex paths, localhost, and IDN domain
     }
 });
 
+test("preserves question-mark quantifiers in regex path rules", () => {
+    assert.deepEqual(validateRuleInput("example.com/^articles?$"), {
+        isValid: true,
+        value: "example.com/^articles?$"
+    });
+});
+
 test("trims valid input before returning it", () => {
     assert.deepEqual(validateRuleInput("  example.com  "), {
         isValid: true,

@@ -42,7 +42,7 @@
         }
 
         const suffix = normalizedRule.slice(domainEndIndex);
-        const pathEndIndex = findFirstIndex(suffix, ["?", "#"]);
+        const pathEndIndex = findFirstIndex(suffix, suffix.startsWith("/^") ? ["#"] : ["?", "#"]);
         const pathPart = suffix.startsWith("/") ? suffix.slice(1, pathEndIndex) : "";
 
         return {

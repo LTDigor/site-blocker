@@ -35,6 +35,15 @@ test("parses regex path rules", () => {
     assert.equal(rule.regex.source, "^articles\\/[0-9]+");
 });
 
+test("preserves question-mark quantifiers when parsing regex path rules", () => {
+    const rule = parseRule("example.com/^articles?$");
+
+    assert.equal(rule.regex.source, "^articles?$");
+    assert.equal(matchesUrl("https://example.com/article", [rule]), true);
+    assert.equal(matchesUrl("https://example.com/articles", [rule]), true);
+    assert.equal(matchesUrl("https://example.com/articless", [rule]), false);
+});
+
 test("normalizes IDN domains to punycode", () => {
     assert.deepEqual(parseRule("ввв.рф"), {
         domain: "xn--b1aaa.xn--p1ai",
@@ -149,7 +158,7 @@ test("builds declarativeNetRequest redirect rules", () => {
             condition: {
                 regexFilter: "^https?://([^/?#]+\\.)?example\\.com(?::[0-9]+)?([/?#].*)?$",
                 resourceTypes: ["main_frame"],
-                isUrlFilterCaseSensitive: false
+                isUrlFilterCaseSensitive: true
             }
         },
         {
@@ -164,7 +173,7 @@ test("builds declarativeNetRequest redirect rules", () => {
             condition: {
                 regexFilter: "^https?://([^/?#]+\\.)?example\\.com(?::[0-9]+)?/news.*$",
                 resourceTypes: ["main_frame"],
-                isUrlFilterCaseSensitive: false
+                isUrlFilterCaseSensitive: true
             }
         },
         {
@@ -179,7 +188,7 @@ test("builds declarativeNetRequest redirect rules", () => {
             condition: {
                 regexFilter: "^https?://([^/?#]+\\.)?example\\.com(?::[0-9]+)?/articles\\/[0-9]+.*$",
                 resourceTypes: ["main_frame"],
-                isUrlFilterCaseSensitive: false
+                isUrlFilterCaseSensitive: true
             }
         }
     ]);
@@ -221,6 +230,20 @@ test("generated declarativeNetRequest regexes preserve rule matching semantics",
         assert.equal(new RegExp(generatedRule.condition.regexFilter).test(url), expected);
         assert.equal(matchesUrl(url, [parsedRule]), expected);
     }
+});
+
+test("generated declarativeNetRequest path rules preserve path case sensitivity", () => {
+    const rawRule = "example.com/news";
+    const url = "https://example.com/News";
+    const parsedRule = parseRule(rawRule);
+    const [generatedRule] = buildDeclarativeNetRequestRules(
+        [rawRule],
+        "chrome-extension://test/blocked.html"
+    );
+    const flags = generatedRule.condition.isUrlFilterCaseSensitive ? "" : "i";
+
+    assert.equal(matchesUrl(url, [parsedRule]), false);
+    assert.equal(new RegExp(generatedRule.condition.regexFilter, flags).test(url), false);
 });
 
 test("generated declarativeNetRequest substitution carries the full original URL", () => {

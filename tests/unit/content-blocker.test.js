@@ -38,6 +38,25 @@ test("content fallback ignores unblocked pages", async (t) => {
     assert.deepEqual(redirects, []);
 });
 
+test("content fallback preserves question-mark quantifiers in regex path rules", async (t) => {
+    const redirects = [];
+    const { cleanup } = await setupContentScriptTest({
+        state: {
+            blockedSites: ["example.com/^articles?$"]
+        },
+        url: "https://example.com/article",
+        redirects
+    });
+    t.after(cleanup);
+
+    await import(`../../src/content/blocker.js?test=${Date.now()}-${Math.random()}`);
+    await Promise.resolve();
+
+    assert.deepEqual(redirects, [
+        "chrome-extension://test/src/blocked/block.html?blockedRule=example.com%2F%5Earticles%3F%24#https://example.com/article"
+    ]);
+});
+
 test("content fallback ignores YouTube Chrome auth pages", async (t) => {
     const redirects = [];
 
