@@ -44,9 +44,6 @@ const TEMPORARY_UNBLOCK_DURATION_MS = 10 * 60 * 1000;
 const DEFAULT_BLOCK_IMAGE_URL = hasExtensionApi() ?
     getExtensionUrl("assets/images/image.jpg") :
     "../../assets/images/image.jpg";
-const LOCAL_BLOCK_IMAGE_URL = hasExtensionApi() ?
-    getExtensionUrl("assets/images/local-image.jpg") :
-    "../../assets/images/local-image.jpg";
 
 const storage = hasExtensionApi() ? extensionStorage.local : createMemoryStorage();
 let areRulesExpanded = false;
@@ -240,7 +237,7 @@ function formatTime(timestamp) {
 
 function getResolvedBlockImage() {
     return storage.get([BLOCKED_IMAGE_STORAGE_KEY]).then((data) => {
-        return data[BLOCKED_IMAGE_STORAGE_KEY] || LOCAL_BLOCK_IMAGE_URL;
+        return data[BLOCKED_IMAGE_STORAGE_KEY] || DEFAULT_BLOCK_IMAGE_URL;
     });
 }
 
@@ -260,7 +257,7 @@ function openUnblockDialog(site) {
     challengeDialogTitle.textContent = "Are you sure you want to unblock?";
     unblockDialogText.textContent = `${site} will be available for 10 minutes.`;
     confirmUnblockButton.textContent = "Unblock 10 min";
-    setPreviewImage(LOCAL_BLOCK_IMAGE_URL);
+    setPreviewImage(DEFAULT_BLOCK_IMAGE_URL);
 
     getResolvedBlockImage().then((imageUrl) => {
         setPreviewImage(imageUrl);
@@ -282,7 +279,7 @@ function openRemoveDialog(site) {
     challengeDialogTitle.textContent = "Remove blocked site?";
     unblockDialogText.textContent = `${site} will be removed from the block list.`;
     confirmUnblockButton.textContent = "Remove";
-    setPreviewImage(LOCAL_BLOCK_IMAGE_URL);
+    setPreviewImage(DEFAULT_BLOCK_IMAGE_URL);
 
     getResolvedBlockImage().then((imageUrl) => {
         setPreviewImage(imageUrl);
