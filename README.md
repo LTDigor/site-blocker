@@ -35,7 +35,7 @@ matching tabs to a local block page.
 2. Add a domain or URL rule.
 3. Use `Add current site` for the active tab.
 4. Use `Choose local image` to change the block-page image.
-5. Solve the math challenge to remove a rule or unblock for 10 minutes.
+5. Solve the math challenge to remove a rule or unblock for 5 minutes.
 
 Rule examples:
 
@@ -43,6 +43,37 @@ Rule examples:
 - `example.com/news` - block paths starting with `/news`.
 - `example.com/^$` - block only the site root.
 - `example.com/^articles/[0-9]+` - block a regex path.
+
+## Send Logs
+
+If something does not work, send:
+
+- Browser name and version.
+- Extension version.
+- The rule you added.
+- The site URL where the problem happened.
+- Screenshots or copied text from the logs below.
+
+Chrome or Edge:
+
+1. Open `chrome://extensions/` or `edge://extensions/`.
+2. Enable developer mode.
+3. Find Site Blocker.
+4. Open `Details`.
+5. Open `Errors` and copy or screenshot any errors.
+6. Click `service worker` under `Inspect views`, reproduce the issue, and copy
+   anything red or yellow from the Console.
+7. If the issue happens on a specific site, open that site, press `F12`, open
+   the Console tab, reproduce the issue, and copy anything red or yellow.
+
+Firefox:
+
+1. Open `about:debugging#/runtime/this-firefox`.
+2. Find Site Blocker.
+3. Click `Inspect`, reproduce the issue, and copy anything red or yellow from
+   the Console.
+4. If the issue happens on a specific site, open that site, press `F12`, open
+   the Console tab, reproduce the issue, and copy anything red or yellow.
 
 ## Project
 

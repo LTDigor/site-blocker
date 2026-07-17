@@ -9,11 +9,10 @@ import {
 
 const blockedImage = document.getElementById("blockedImage");
 const defaultImageUrl = getExtensionUrl("assets/images/image.jpg");
-const localImageUrl = getExtensionUrl("assets/images/local-image.jpg");
 const imageStorageKey = "blockedImageDataUrl";
 const temporaryUnblocksStorageKey = "temporaryUnblocks";
 
-setBlockedImage(localImageUrl, defaultImageUrl);
+setBlockedImage(defaultImageUrl);
 
 function setBlockedImage(imageUrl, fallbackUrl = defaultImageUrl) {
     blockedImage.onerror = () => {
@@ -26,9 +25,9 @@ function setBlockedImage(imageUrl, fallbackUrl = defaultImageUrl) {
 
 extensionStorage.local.get([imageStorageKey, temporaryUnblocksStorageKey]).then((data) => {
     redirectIfTemporarilyUnblocked(data?.[temporaryUnblocksStorageKey]);
-    setBlockedImage(data?.[imageStorageKey] || localImageUrl, defaultImageUrl);
+    setBlockedImage(data?.[imageStorageKey] || defaultImageUrl);
 }).catch(() => {
-    setBlockedImage(localImageUrl, defaultImageUrl);
+    setBlockedImage(defaultImageUrl);
 });
 
 function redirectIfTemporarilyUnblocked(temporaryUnblocks = {}) {

@@ -104,14 +104,14 @@ test("temporarily unblocking a blocked site confirms with block image preview", 
 
     assert.equal(elements.unblockDialog.open, true);
     assert.equal(elements.unblockPreview.src, "data:image/png;base64,custom");
-    assert.equal(elements.unblockDialogText.textContent, "example.com will be available for 10 minutes.");
+    assert.equal(elements.unblockDialogText.textContent, "example.com will be available for 5 minutes.");
     answerCurrentChallenge(elements);
 
     await submitUnblockForm(elements);
 
     assert.deepEqual(state.blockedSites, ["example.com", "openai.com"]);
     assert.deepEqual(state.temporaryUnblocks, {
-        "example.com": now + 10 * 60 * 1000
+        "example.com": now + 5 * 60 * 1000
     });
     assert.equal(elements.formHint.textContent, "");
     assert.equal(elements.unblockDialog.open, false);
@@ -263,7 +263,7 @@ test("popup on a blocked page only shows the currently blocked site as unblockab
     assert.equal(elements.list.children.length, 2);
     assert.equal(elements.currentBlockSection.classList.has("is-hidden"), false);
     assert.equal(elements.currentBlockSite.textContent, "openai.com");
-    assert.equal(elements.currentUnblockBtn.textContent, "Unblock 10 min");
+    assert.equal(elements.currentUnblockBtn.textContent, "Unblock 5 min");
 });
 
 test("popup ignores non-extension pages that look like the block page", async (t) => {
@@ -297,7 +297,7 @@ test("popup shows unblock action when only one blocked site exists without block
     assert.equal(elements.rulesContent.hidden, true);
     assert.equal(elements.currentBlockSection.classList.has("is-hidden"), false);
     assert.equal(elements.currentBlockSite.textContent, "example.com");
-    assert.equal(elements.currentUnblockBtn.textContent, "Unblock 10 min");
+    assert.equal(elements.currentUnblockBtn.textContent, "Unblock 5 min");
 });
 
 test("adding an already blocked site again clears its temporary unblock", async (t) => {
@@ -326,7 +326,7 @@ test("adding an already blocked site again clears its temporary unblock", async 
 
     assert.deepEqual(state.temporaryUnblocks, {});
     assert.equal(elements.currentBlockStatus.textContent, "");
-    assert.equal(elements.currentUnblockBtn.textContent, "Unblock 10 min");
+    assert.equal(elements.currentUnblockBtn.textContent, "Unblock 5 min");
     assert.equal(elements.formHint.textContent, "Blocked site restored.");
 });
 
@@ -360,7 +360,7 @@ test("temporary unblock requires solving the math challenge", async (t) => {
     await submitUnblockForm(elements);
 
     assert.deepEqual(state.temporaryUnblocks, {
-        "example.com": now + 10 * 60 * 1000
+        "example.com": now + 5 * 60 * 1000
     });
     assert.deepEqual(chrome.tabs.updatedTabs, [
         {
