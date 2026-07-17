@@ -42,6 +42,10 @@ input {
     overflow: hidden;
 }
 
+.popup-shell:has(.current-block-section.is-hidden) {
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
 .popup-header {
     display: flex;
     align-items: flex-start;
