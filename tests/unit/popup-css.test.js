@@ -18,6 +18,21 @@ test("popup keeps a fixed height without stretching the image section", async ()
     assert.match(css, /\.rules-content\s*{[^}]*\boverflow-y:\s*auto;/s);
 });
 
+test("collapsed rules use content-sized grid rows", async () => {
+    const css = await readFile(new URL("../../src/popup/popup.css", import.meta.url), "utf8");
+
+    assert.match(
+        css,
+        /\.popup-shell:has\(\.rules-section\.is-collapsed\)\s*{[^}]*grid-template-rows:\s*repeat\(5,\s*auto\);[^}]*align-content:\s*start;/s,
+        "collapsed rules must not keep the flexible grid row",
+    );
+    assert.match(
+        css,
+        /\.popup-shell:has\(\.current-block-section\.is-hidden\):has\(\.rules-section\.is-collapsed\)\s*{[^}]*grid-template-rows:\s*repeat\(4,\s*auto\);/s,
+        "the hidden current-site card must also be removed from the collapsed layout",
+    );
+});
+
 function getRule(css, selector) {
     const match = css.match(new RegExp(`${selector}\\s*{([^}]*)}`));
 
