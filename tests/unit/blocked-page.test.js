@@ -22,7 +22,7 @@ test("blocked page shows the default image before storage resolves", async (t) =
     const importPromise = importBlockedPageScript();
     await storageRequested;
 
-    assert.equal(blockedImage.src, "chrome-extension://test/assets/images/local-image.jpg");
+    assert.equal(blockedImage.src, "chrome-extension://test/assets/images/image.jpg");
 
     resolveStorage({});
     await importPromise;
@@ -58,7 +58,7 @@ test("blocked page keeps the default image when storage is unavailable", async (
 
     await importBlockedPageScript();
 
-    assert.equal(blockedImage.src, "chrome-extension://test/assets/images/local-image.jpg");
+    assert.equal(blockedImage.src, "chrome-extension://test/assets/images/image.jpg");
 });
 
 test("blocked page keeps the default image when storage returns no data", async (t) => {
@@ -73,14 +73,14 @@ test("blocked page keeps the default image when storage returns no data", async 
 
     await importBlockedPageScript();
 
-    assert.equal(blockedImage.src, "chrome-extension://test/assets/images/local-image.jpg");
+    assert.equal(blockedImage.src, "chrome-extension://test/assets/images/image.jpg");
 });
 
-test("blocked page falls back to the neutral default when local image is missing", async (t) => {
+test("blocked page falls back to the neutral default when a saved custom image is invalid", async (t) => {
     const blockedImage = {
         set src(value) {
             this.currentSrc = value;
-            if (value.endsWith("/assets/images/local-image.jpg")) {
+            if (value.startsWith("data:image/invalid")) {
                 this.onerror?.();
             }
         },
@@ -91,7 +91,9 @@ test("blocked page falls back to the neutral default when local image is missing
     const { cleanup } = setupBlockedPageTest({
         blockedImage,
         storageGet() {
-            return Promise.resolve(undefined);
+            return Promise.resolve({
+                blockedImageDataUrl: "data:image/invalid"
+            });
         }
     });
     t.after(cleanup);
