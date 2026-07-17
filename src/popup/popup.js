@@ -435,9 +435,10 @@ function saveTemporaryUnblock(site, expiresAt, nextTemporaryUnblocks) {
 
 function openTemporarilyUnblockedSite(site) {
     if (!currentTabId || !hasExtensionApi()) return Promise.resolve();
+    const matchingBlockedUrl = site === currentBlockedRule ? currentBlockedUrl : null;
 
     return extensionTabs.update(currentTabId, {
-        url: currentBlockedUrl || getUrlForRule(site)
+        url: matchingBlockedUrl || getUrlForRule(site)
     });
 }
 

@@ -114,6 +114,27 @@ export function getCurrentSiteFromUrl(urlString) {
 
 function parseInputRule(rule) {
     const isHttpUrl = /^https?:\/\//i.test(rule);
+    const withoutProtocol = rule.replace(/^https?:\/\//i, "");
+    const hostEndIndex = findFirstIndex(withoutProtocol, ["/", "?", "#"]);
+    const hostname = withoutProtocol.slice(0, hostEndIndex);
+    const pathAndSuffix = withoutProtocol.slice(hostEndIndex);
+
+    if (pathAndSuffix.startsWith("/^")) {
+        if (hostname.includes("@") || hostname.includes(":")) {
+            return {
+                hostname: "",
+                path: "",
+                hasUnsupportedAuthority: true
+            };
+        }
+
+        const pathEndIndex = findFirstIndex(pathAndSuffix, ["#"]);
+
+        return {
+            hostname: hostname.replace(/\/$/, ""),
+            path: normalizePath(pathAndSuffix.slice(0, pathEndIndex))
+        };
+    }
 
     if (isHttpUrl) {
         try {
@@ -139,10 +160,6 @@ function parseInputRule(rule) {
         }
     }
 
-    const withoutProtocol = rule.replace(/^https?:\/\//i, "");
-    const hostEndIndex = findFirstIndex(withoutProtocol, ["/", "?", "#"]);
-    const hostname = withoutProtocol.slice(0, hostEndIndex);
-
     if (hostname.includes("@") || hostname.includes(":")) {
         return {
             hostname: "",
@@ -151,7 +168,6 @@ function parseInputRule(rule) {
         };
     }
 
-    const pathAndSuffix = withoutProtocol.slice(hostEndIndex);
     const pathEndIndex = findFirstIndex(pathAndSuffix, ["?", "#"]);
     const path = pathAndSuffix.startsWith("/") ?
         normalizePath(pathAndSuffix.slice(0, pathEndIndex)) :
