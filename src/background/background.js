@@ -65,10 +65,27 @@ async function applyBlockingRules(rawRules, temporaryUnblocks = {}) {
     const supportedRules = await filterSupportedRules(rules);
     const existingRules = await extensionDeclarativeNetRequest.getDynamicRules();
 
-    await extensionDeclarativeNetRequest.updateDynamicRules({
+    try {
+        await replaceDynamicRules(existingRules, supportedRules);
+    } catch (error) {
+        if (!isDuplicateRuleIdError(error)) throw error;
+
+        const refreshedRules = await extensionDeclarativeNetRequest.getDynamicRules();
+        await replaceDynamicRules(refreshedRules, supportedRules);
+    }
+}
+
+function replaceDynamicRules(existingRules, replacementRules) {
+    return extensionDeclarativeNetRequest.updateDynamicRules({
         removeRuleIds: existingRules.map((rule) => rule.id),
-        addRules: supportedRules
+        addRules: replacementRules
     });
+}
+
+function isDuplicateRuleIdError(error) {
+    return /Rule with id \d+ does not have a unique ID|duplicate rule ID/i.test(
+        error?.message || String(error)
+    );
 }
 
 async function scheduleTemporaryUnblockRefresh(temporaryUnblocks) {

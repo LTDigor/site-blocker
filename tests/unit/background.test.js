@@ -34,6 +34,49 @@ test("background installs dynamic redirect rules that preserve the original URL"
     assert.equal(chrome.declarativeNetRequest.lastRegexSupportCheck.isCaseSensitive, false);
 });
 
+test("background retries a dynamic rule update that races another extension context", async (t) => {
+    const previousChrome = globalThis.chrome;
+    const previousBrowser = globalThis.browser;
+    const chrome = createChromeMock({
+        blockedSites: ["example.com", "openai.com", "github.com"],
+        temporaryUnblocks: {}
+    });
+    let updateAttempts = 0;
+    let dynamicRules = [];
+
+    chrome.declarativeNetRequest.getDynamicRules = (callback) => callback(dynamicRules);
+    chrome.declarativeNetRequest.updateDynamicRules = function (options, callback) {
+        updateAttempts += 1;
+
+        if (updateAttempts === 1) {
+            dynamicRules = options.addRules;
+            chrome.runtime.lastError = {
+                message: "Rule with id 3 does not have a unique ID."
+            };
+            callback();
+            delete chrome.runtime.lastError;
+            return;
+        }
+
+        dynamicRules = options.addRules;
+        this.lastUpdateOptions = options;
+        callback();
+    };
+
+    globalThis.browser = undefined;
+    globalThis.chrome = chrome;
+    t.after(() => {
+        globalThis.chrome = previousChrome;
+        globalThis.browser = previousBrowser;
+    });
+
+    await import(`../../src/background/background.js?test=${Date.now()}-${Math.random()}`);
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.equal(updateAttempts, 2);
+    assert.deepEqual(chrome.declarativeNetRequest.lastUpdateOptions.removeRuleIds, [1, 2, 3]);
+});
+
 function createChromeMock(state) {
     return {
         runtime: {

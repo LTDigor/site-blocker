@@ -40,7 +40,7 @@ const confirmUnblockButton = documentRef.getElementById("confirmUnblockBtn");
 
 const BLOCKED_IMAGE_STORAGE_KEY = "blockedImageDataUrl";
 const TEMPORARY_UNBLOCKS_KEY = "temporaryUnblocks";
-const TEMPORARY_UNBLOCK_DURATION_MS = 10 * 60 * 1000;
+const TEMPORARY_UNBLOCK_DURATION_MS = 5 * 60 * 1000;
 const DEFAULT_BLOCK_IMAGE_URL = hasExtensionApi() ?
     getExtensionUrl("assets/images/image.jpg") :
     "../../assets/images/image.jpg";
@@ -114,8 +114,8 @@ function render(sites, temporaryUnblocks = currentTemporaryUnblocks) {
         const unblock = documentRef.createElement("button");
         unblock.className = "unblock-button";
         unblock.type = "button";
-        unblock.textContent = expiresAt ? "Extend 10 min" : "Unblock 10 min";
-        unblock.setAttribute("aria-label", `Unblock ${site} for 10 minutes`);
+        unblock.textContent = expiresAt ? "Extend 5 min" : "Unblock 5 min";
+        unblock.setAttribute("aria-label", `Unblock ${site} for 5 minutes`);
         unblock.onclick = () => {
             openUnblockDialog(site);
         };
@@ -149,8 +149,8 @@ function renderCurrentBlockedSite(sites) {
     const expiresAt = currentTemporaryUnblocks[site];
     currentBlockSite.textContent = site;
     currentBlockStatus.textContent = expiresAt ? `Unblocked until ${formatTime(expiresAt)}` : "";
-    currentUnblockButton.textContent = expiresAt ? "Extend 10 min" : "Unblock 10 min";
-    currentUnblockButton.setAttribute("aria-label", `Unblock ${site} for 10 minutes`);
+    currentUnblockButton.textContent = expiresAt ? "Extend 5 min" : "Unblock 5 min";
+    currentUnblockButton.setAttribute("aria-label", `Unblock ${site} for 5 minutes`);
     currentUnblockButton.onclick = () => {
         openUnblockDialog(site);
     };
@@ -258,8 +258,8 @@ function openUnblockDialog(site) {
     challengeDialogAction = "unblock";
     prepareMathChallenge();
     challengeDialogTitle.textContent = "Are you sure you want to unblock?";
-    unblockDialogText.textContent = `${site} will be available for 10 minutes.`;
-    confirmUnblockButton.textContent = "Unblock 10 min";
+    unblockDialogText.textContent = `${site} will be available for 5 minutes.`;
+    confirmUnblockButton.textContent = "Unblock 5 min";
     setPreviewImage(LOCAL_BLOCK_IMAGE_URL);
 
     getResolvedBlockImage().then((imageUrl) => {
