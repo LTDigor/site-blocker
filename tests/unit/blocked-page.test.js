@@ -28,6 +28,23 @@ test("blocked page shows the default image before storage resolves", async (t) =
     await importPromise;
 });
 
+test("blocked page preserves the default image URL resolved in its incognito context", async (t) => {
+    const incognitoImageUrl = "chrome-extension://incognito-dynamic/assets/images/image.jpg";
+    const blockedImage = { src: incognitoImageUrl };
+    const { cleanup } = setupBlockedPageTest({
+        blockedImage,
+        runtimeImageUrl: "chrome-extension://regular-dynamic/assets/images/image.jpg",
+        storageGet() {
+            return Promise.resolve({});
+        }
+    });
+    t.after(cleanup);
+
+    await importBlockedPageScript();
+
+    assert.equal(blockedImage.src, incognitoImageUrl);
+});
+
 test("blocked page uses a saved custom image when storage provides one", async (t) => {
     const blockedImage = {};
     const customImage = "data:image/png;base64,custom";
@@ -189,16 +206,27 @@ test("blocked page reload refuses mismatched original URL context", async (t) =>
     assert.deepEqual(redirects, []);
 });
 
-function setupBlockedPageTest({ blockedImage, storageGet, url, redirects = [] }) {
+function setupBlockedPageTest({
+    blockedImage,
+    storageGet,
+    url,
+    redirects = [],
+    runtimeImageUrl = "chrome-extension://test/assets/images/image.jpg"
+}) {
     const previousBrowser = globalThis.browser;
     const previousChrome = globalThis.chrome;
     const previousDocument = globalThis.document;
     const previousLocation = globalThis.location;
 
+    if (!blockedImage.src) {
+        blockedImage.src = runtimeImageUrl;
+    }
+
     globalThis.browser = {
         runtime: {
             getURL(path) {
-                return `chrome-extension://test/${path}`;
+                assert.equal(path, "assets/images/image.jpg");
+                return runtimeImageUrl;
             }
         },
         storage: {
