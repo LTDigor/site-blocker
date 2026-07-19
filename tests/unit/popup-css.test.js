@@ -15,7 +15,17 @@ test("popup keeps a fixed height without stretching the image section", async ()
         "the hidden current-site section must not shift the image section into the flexible grid row",
     );
     assert.match(css, /\.rules-section\s*{[^}]*\bmin-height:\s*0;/s);
-    assert.match(css, /\.rules-content\s*{[^}]*\boverflow-y:\s*auto;/s);
+    assert.match(
+        css,
+        /\.rules-section:not\(\.is-collapsed\)\s*{[^}]*display:\s*grid;[^}]*grid-template-rows:\s*auto minmax\(0,\s*1fr\);/s,
+        "the expanded rules card must reserve its header before sizing the scroll area",
+    );
+    assert.match(css, /\.rules-content\s*{[^}]*\bmin-height:\s*0;[^}]*\boverflow-y:\s*auto;/s);
+    assert.doesNotMatch(
+        css,
+        /\.rules-content\s*{[^}]*\bmax-height:\s*100%;/s,
+        "the scroll area must not claim the full card height in addition to the header",
+    );
 });
 
 test("collapsed rules use content-sized grid rows", async () => {

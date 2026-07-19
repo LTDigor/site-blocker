@@ -1,6 +1,5 @@
 import {
-    extensionStorage,
-    getExtensionUrl
+    extensionStorage
 } from "../shared/extension-api.js";
 import {
     matchesUrl,
@@ -8,7 +7,7 @@ import {
 } from "../background/rules.js";
 
 const blockedImage = document.getElementById("blockedImage");
-const defaultImageUrl = getExtensionUrl("assets/images/image.jpg");
+const defaultImageUrl = blockedImage.src;
 const imageStorageKey = "blockedImageDataUrl";
 const temporaryUnblocksStorageKey = "temporaryUnblocks";
 
