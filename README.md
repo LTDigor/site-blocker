@@ -1,7 +1,9 @@
 # Site Blocker
 
-Browser extension that blocks configured domains or URL paths and redirects
-matching tabs to a local block page.
+Site Blocker блокирует выбранные домены и URL-пути, перенаправляя совпавшие
+страницы на локальный экран блокировки. Чтобы вернуть доступ, нужно решить
+небольшой математический пример — достаточно неудобно, чтобы остановить
+бездумный переход, но не настолько, чтобы потерять контроль.
 
 ## Идея
 
@@ -19,98 +21,123 @@ matching tabs to a local block page.
 Так что не нужно прокачивать харды. Прокачивайте свое окружение, свои связи,
 свою сеть контактов.
 
-## Install
+<p align="center">
+  <img src="./store-assets/screenshot-main.png" width="100%" alt="Site Blocker блокирует домены и отдельные URL-пути">
+</p>
 
-1. Open the browser extension page:
+## Возможности
+
+- Блокировка целого домена, префикса пути или пути по регулярному выражению.
+- Добавление текущего сайта прямо из всплывающего окна расширения.
+- Собственное локальное изображение на странице блокировки.
+- Временная разблокировка на 5 минут после решения математического примера.
+- Работа в Chrome, Edge и Firefox, включая страницы в режиме инкогнито.
+
+## Установка
+
+Расширение пока устанавливается из исходников:
+
+1. Скачайте репозиторий или клонируйте его:
+
+   ```bash
+   git clone https://github.com/ltdigor/site-blocker.git
+   ```
+
+2. Откройте страницу расширений:
+
    - Chrome: `chrome://extensions/`
    - Edge: `edge://extensions/`
    - Firefox: `about:debugging#/runtime/this-firefox`
-2. Enable developer mode.
-3. Chrome/Edge: choose `Load unpacked` and select this repository.
-4. Firefox: choose `Load Temporary Add-on` and select `manifest.json`.
 
-## Use
+3. В Chrome или Edge включите режим разработчика, нажмите **Load unpacked**
+   и выберите папку репозитория.
+4. В Firefox нажмите **Load Temporary Add-on** и выберите `manifest.json`.
 
-1. Open the extension popup.
-2. Add a domain or URL rule.
-3. Use `Add current site` for the active tab.
-4. Use `Choose local image` to change the block-page image.
-5. Solve the math challenge to remove a rule or unblock for 5 minutes.
+## Использование
 
-Rule examples:
+1. Откройте всплывающее окно Site Blocker.
+2. Введите правило или нажмите **Add current site**, чтобы добавить текущий
+   сайт.
+3. При желании выберите локальное изображение через **Choose local image**.
+4. Чтобы удалить правило или разблокировать сайт на 5 минут, решите
+   математический пример.
 
-- `example.com` - block the whole domain.
-- `example.com/news` - block paths starting with `/news`.
-- `example.com/^$` - block only the site root.
-- `example.com/^articles/[0-9]+` - block a regex path.
+### Формат правил
 
-## Send Logs
+| Правило | Что будет заблокировано |
+| --- | --- |
+| `example.com` | Весь домен и его поддомены |
+| `example.com/news` | Пути, начинающиеся с `/news` |
+| `example.com/^$` | Только главная страница сайта |
+| `example.com/^articles/[0-9]+` | Пути, совпадающие с регулярным выражением |
 
-If something does not work, send:
+Протокол указывать не нужно: расширение работает и с `http`, и с `https`.
 
-- Browser name and version.
-- Extension version.
-- The rule you added.
-- The site URL where the problem happened.
-- Screenshots or copied text from the logs below.
+## Если что-то не работает
 
-Chrome or Edge:
+Для диагностики приложите:
 
-1. Open `chrome://extensions/` or `edge://extensions/`.
-2. Enable developer mode.
-3. Find Site Blocker.
-4. Open `Details`.
-5. Open `Errors` and copy or screenshot any errors.
-6. Click `service worker` under `Inspect views`, reproduce the issue, and copy
-   anything red or yellow from the Console.
-7. If the issue happens on a specific site, open that site, press `F12`, open
-   the Console tab, reproduce the issue, and copy anything red or yellow.
+- название и версию браузера;
+- версию расширения;
+- добавленное правило;
+- адрес страницы, на которой возникла проблема;
+- скриншоты или текст ошибок из консоли.
 
-Firefox:
+<details>
+<summary><strong>Как собрать логи в Chrome или Edge</strong></summary>
 
-1. Open `about:debugging#/runtime/this-firefox`.
-2. Find Site Blocker.
-3. Click `Inspect`, reproduce the issue, and copy anything red or yellow from
-   the Console.
-4. If the issue happens on a specific site, open that site, press `F12`, open
-   the Console tab, reproduce the issue, and copy anything red or yellow.
+1. Откройте `chrome://extensions/` или `edge://extensions/`.
+2. Включите режим разработчика и найдите Site Blocker.
+3. Откройте **Details**, затем **Errors**, и скопируйте ошибки.
+4. Нажмите **service worker** в разделе **Inspect views**, воспроизведите
+   проблему и скопируйте красные или жёлтые сообщения из Console.
+5. Если проблема возникает на определённом сайте, откройте его, нажмите `F12`,
+   перейдите в Console, воспроизведите проблему и скопируйте сообщения.
 
-## Project
+</details>
 
-- `manifest.json` - extension manifest.
-- `src/background/` - service worker and blocking logic.
-- `src/popup/` - popup UI.
-- `src/blocked/` - block page.
-- `assets/icons/` - packaged extension icons.
-- `assets/images/` - block-page media.
-- `store-assets/` - store listing assets, excluded from extension ZIPs.
+<details>
+<summary><strong>Как собрать логи в Firefox</strong></summary>
 
-## Test and Package
+1. Откройте `about:debugging#/runtime/this-firefox`.
+2. Найдите Site Blocker и нажмите **Inspect**.
+3. Воспроизведите проблему и скопируйте красные или жёлтые сообщения из
+   Console.
+4. Если проблема возникает на определённом сайте, откройте его, нажмите `F12`,
+   перейдите в Console, воспроизведите проблему и скопируйте сообщения.
+
+</details>
+
+## Разработка
 
 ```bash
 npm test
 npm run package
 ```
 
-Packages are written to `dist/`.
+Готовые архивы расширения сохраняются в `dist/`.
 
-## Chrome Web Store Submission
+| Путь | Назначение |
+| --- | --- |
+| `manifest.json` | Манифест расширения |
+| `src/background/` | Service worker и правила блокировки |
+| `src/content/` | Резервная блокировка после загрузки страницы |
+| `src/popup/` | Интерфейс всплывающего окна |
+| `src/blocked/` | Локальная страница блокировки |
+| `assets/icons/` | Иконки расширения |
+| `assets/images/` | Изображение страницы блокировки |
+| `store-assets/` | Материалы для публикации в магазинах |
 
-Before resubmitting, publish `privacy.html` at a public HTTPS URL and enter that
-URL in the Chrome Web Store Developer Dashboard privacy policy field. The
-preferred URL is the GitHub Pages page for this repo:
+## Публикация в Chrome Web Store
+
+Перед отправкой новой версии опубликуйте `privacy.html` по публичному HTTPS-адресу
+и укажите его в поле **Privacy Policy** в Chrome Web Store Developer Dashboard:
 
 ```text
 https://ltdigor.github.io/site-blocker/privacy.html
 ```
 
-If GitHub Pages is not enabled yet, enable it for the repository root on the
-primary branch after this file is pushed. As a fallback, the public GitHub page
-for `PRIVACY.md` can be used, but a dedicated HTML page is easier for reviewers
-to recognize as a direct policy page.
-
-1. Open the item in the Developer Dashboard.
-2. Go to the Privacy tab.
-3. Paste the public privacy policy URL into the Privacy Policy box.
-4. Open the saved URL in a signed-out or incognito browser session to confirm it
-   is publicly accessible and points directly to the policy.
+Если GitHub Pages ещё не включён, настройте публикацию корня репозитория из
+основной ветки. Затем откройте ссылку в приватном окне и убедитесь, что политика
+доступна без авторизации. Как запасной вариант можно использовать публичную
+страницу [`PRIVACY.md`](./PRIVACY.md).
